@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "useDefineForClassFields": true,
+    "jsx": "preserve",
+    "paths": {
+      "@app/shared": ["../shared/src/index.ts"],
+      "@app/shared/*": ["../shared/src/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "references": [{ "path": "../shared" }],
+  "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

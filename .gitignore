@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+# AI tooling — not part of the codebase
+.claude/
+.claude-flow/
+_bmad/
+_bmad-output/
+.mcp.json
+CLAUDE.md
