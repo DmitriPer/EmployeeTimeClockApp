@@ -7,8 +7,8 @@ import * as repo from './users.repository.js';
 const BCRYPT_ROUNDS = 12;
 
 export async function listUsers() {
-  const users = await repo.findAllUsers();
-  return users.map((u) => ({
+  const rows = await repo.findAllUsers();
+  const users = rows.map((u) => ({
     id: u.id,
     employeeId: u.employee_id,
     name: u.name,
@@ -17,6 +17,7 @@ export async function listUsers() {
     isActive: u.is_active === 1,
     createdAt: u.created_at.toISOString(),
   }));
+  return { users, total: users.length };
 }
 
 export async function createUser(dto: CreateUserDto) {
@@ -38,20 +39,30 @@ export async function createUser(dto: CreateUserDto) {
     role: dto.role,
   });
 
-  return { id, employeeId: dto.employeeId, name: dto.name, role: dto.role };
+  return { id, employeeId: dto.employeeId, name: dto.name, email: dto.email, role: dto.role };
 }
 
-export async function updateUser(id: number, dto: UpdateUserDto): Promise<void> {
+export async function updateUser(id: number, dto: UpdateUserDto) {
   const user = await repo.findUserById(id);
   if (!user) {
     throw new AppError('User not found.', 404, ErrorCode.NOT_FOUND);
   }
 
-  await repo.updateUser(id, {
+  const updates = {
     ...(dto.name !== undefined && { name: dto.name }),
     ...(dto.email !== undefined && { email: dto.email }),
     ...(dto.role !== undefined && { role: dto.role }),
-  });
+  };
+
+  await repo.updateUser(id, updates);
+
+  return {
+    id,
+    name: updates.name ?? user.name,
+    email: updates.email ?? user.email,
+    role: updates.role ?? user.role,
+    isActive: user.is_active === 1,
+  };
 }
 
 export async function resetUserPassword(id: number, dto: ResetPasswordDto): Promise<void> {
@@ -81,9 +92,9 @@ export async function changeOwnPassword(userId: number, dto: ChangePasswordDto):
   await repo.deleteUserRefreshTokens(userId);
 }
 
-export async function deactivateUser(requesterId: number, targetId: number): Promise<void> {
+export async function deactivateUser(requesterId: number, targetId: number) {
   if (requesterId === targetId) {
-    throw new AppError('You cannot deactivate your own account.', 400, ErrorCode.CANNOT_DEACTIVATE_SELF);
+    throw new AppError('You cannot deactivate your own account.', 403, ErrorCode.CANNOT_DEACTIVATE_SELF);
   }
 
   const user = await repo.findUserById(targetId);
@@ -96,4 +107,6 @@ export async function deactivateUser(requesterId: number, targetId: number): Pro
 
   await repo.deactivateUser(targetId);
   await repo.deleteUserRefreshTokens(targetId);
+
+  return { id: targetId, isActive: false as const };
 }

@@ -26,8 +26,8 @@ export interface UpdateUserPayload {
 }
 
 export async function fetchUsers(): Promise<UserSummary[]> {
-  const { data } = await api.get<{ success: true; data: UserSummary[] }>('/users');
-  return data.data;
+  const { data } = await api.get<{ success: true; data: { users: UserSummary[]; total: number } }>('/users');
+  return data.data.users;
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<void> {
