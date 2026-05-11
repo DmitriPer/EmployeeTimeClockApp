@@ -32,6 +32,20 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function handleRefresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const rawToken = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+    if (!rawToken) {
+      throw new AppError('Invalid refresh token', 401, ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+
+    const result = await authService.refreshAccessToken(rawToken);
+    res.status(200).json({ success: true, data: { accessToken: result.accessToken } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function handleLogout(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await authService.logout(req.user!.id);

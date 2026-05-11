@@ -28,6 +28,22 @@ export async function insertRefreshToken(params: {
     .execute();
 }
 
+export async function findUserById(userId: number) {
+  return db
+    .selectFrom('users')
+    .selectAll()
+    .where('id', '=', userId)
+    .executeTakeFirst();
+}
+
+export async function findRefreshTokenByHash(tokenHash: string) {
+  return db
+    .selectFrom('refresh_tokens')
+    .selectAll()
+    .where('token_hash', '=', tokenHash)
+    .executeTakeFirst();
+}
+
 export function generateRawToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
