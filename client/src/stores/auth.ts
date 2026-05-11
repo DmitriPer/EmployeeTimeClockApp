@@ -2,11 +2,9 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { UserRole } from '@app/shared';
 
-interface AuthUser {
-  id: string;
-  employeeId: string;
+export interface AuthUser {
+  id: number;
   name: string;
-  email: string;
   role: UserRole;
 }
 
