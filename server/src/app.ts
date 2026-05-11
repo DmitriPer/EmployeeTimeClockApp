@@ -9,6 +9,7 @@ import { authRouter } from './auth/auth.routes.js';
 import { timeclockRouter } from './timeclock/timeclock.routes.js';
 import { historyRouter } from './history/history.routes.js';
 import { usersRouter } from './users/users.routes.js';
+import { managerRouter } from './manager/manager.routes.js';
 
 export const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/timeclock', timeclockRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/manager', managerRouter);
 
 app.use((_req, res) => {
   res.status(404).json({
