@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { fetchHistory, updateNote, type HistoryEntry } from '../api/history.js';
 import { downloadExport, type ExportFormat } from '../api/export.js';
 
@@ -51,6 +51,10 @@ function startEditNote(entry: HistoryEntry): void {
   noteInput.value = entry.employeeNote ?? '';
 }
 
+const dateRangeError = computed(() =>
+  from.value && to.value && from.value > to.value ? '"From" date must be before "To" date.' : null,
+);
+
 const exporting = ref(false);
 
 async function handleExport(format: ExportFormat): Promise<void> {
@@ -92,10 +96,12 @@ async function saveNote(entry: HistoryEntry): Promise<void> {
       </label>
       <button
         @click="loadHistory"
-        class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+        :disabled="!!dateRangeError"
+        class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Apply
       </button>
+      <span v-if="dateRangeError" class="text-xs text-red-600">{{ dateRangeError }}</span>
       <div class="ml-auto flex gap-2">
         <button
           v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])"

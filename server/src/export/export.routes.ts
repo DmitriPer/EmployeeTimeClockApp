@@ -16,6 +16,11 @@ exportRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
       throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
     }
 
+    const { from, to } = parsed.data;
+    if (from && to && from > to) {
+      throw new AppError('"From" date must be before "To" date.', 400, ErrorCode.VALIDATION_ERROR);
+    }
+
     const { buffer, contentType, filename } = await generateExport(
       req.user!.id,
       req.user!.role,

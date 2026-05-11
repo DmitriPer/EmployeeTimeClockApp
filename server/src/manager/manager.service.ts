@@ -2,7 +2,31 @@ import { ErrorCode } from '@app/shared';
 import { AppError } from '../lib/errors.js';
 import * as repo from './manager.repository.js';
 
-export async function getPendingOvertimeRequests() {
+export interface OvertimeRequestRow {
+  id: number;
+  userId: number;
+  timeEntryId: number;
+  status: string;
+  overtimeMinutes: number;
+  managerNote: string | null;
+  createdAt: string;
+  clockInAt: string;
+  clockOutAt: string | null;
+  employeeName: string;
+  employeeId: string;
+}
+
+export interface FlaggedSessionRow {
+  timeEntryId: number;
+  employeeName: string;
+  employeeId: string;
+  clockInAt: string;
+  clockOutAt: string | null;
+  flagReason: 'AUTO_CLOSED_BREAK';
+  correctionCount: number;
+}
+
+export async function getPendingOvertimeRequests(): Promise<OvertimeRequestRow[]> {
   const rows = await repo.findPendingOvertimeRequests();
   return rows.map((r) => ({
     id: r.id,
@@ -42,7 +66,7 @@ export async function reviewOvertimeRequest(params: {
   });
 }
 
-export async function getFlaggedSessions(userId?: number) {
+export async function getFlaggedSessions(userId?: number): Promise<{ sessions: FlaggedSessionRow[]; total: number }> {
   const rows = await repo.findFlaggedSessions(userId);
   const sessions = rows.map((r) => ({
     timeEntryId: r.id,
