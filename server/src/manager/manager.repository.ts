@@ -1,7 +1,7 @@
 import { db } from '../db/connection.js';
 import { sql } from 'kysely';
 
-export async function findPendingOvertimeRequests() {
+export async function findPendingOvertimeRequests(managerId?: number) {
   return db
     .selectFrom('overtime_requests as ot')
     .innerJoin('users as u', 'u.id', 'ot.user_id')
@@ -22,6 +22,7 @@ export async function findPendingOvertimeRequests() {
       'te.clock_out_at',
     ])
     .where('ot.status', '=', 'PENDING')
+    .$if(managerId !== undefined, (qb) => qb.where('u.manager_id', '=', managerId!))
     .orderBy('ot.created_at', 'asc')
     .execute();
 }
@@ -52,7 +53,7 @@ export async function updateOvertimeRequest(params: {
     .execute();
 }
 
-export async function findFlaggedSessions(userId?: number) {
+export async function findFlaggedSessions(managerId?: number, userId?: number) {
   return db
     .selectFrom('time_entries as te')
     .innerJoin('users as u', 'u.id', 'te.user_id')
@@ -67,6 +68,7 @@ export async function findFlaggedSessions(userId?: number) {
       sql<number>`COUNT(al.id)`.as('correction_count'),
     ])
     .where('te.is_flagged', '=', 1)
+    .$if(managerId !== undefined, (qb) => qb.where('u.manager_id', '=', managerId!))
     .$if(userId !== undefined, (qb) => qb.where('te.user_id', '=', userId!))
     .groupBy(['te.id', 'te.user_id', 'te.clock_in_at', 'te.clock_out_at', 'u.name', 'u.employee_id'])
     .orderBy('te.clock_in_at', 'desc')

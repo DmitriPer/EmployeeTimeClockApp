@@ -9,6 +9,17 @@ export interface UserSummary {
   role: UserRole;
   isActive: boolean;
   createdAt: string;
+  managerId: number | null;
+}
+
+export interface OwnProfile {
+  id: number;
+  employeeId: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  managerId: number | null;
+  managerName: string | null;
 }
 
 export interface CreateUserPayload {
@@ -17,12 +28,19 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   role: UserRole;
+  managerId?: number | null;
 }
 
 export interface UpdateUserPayload {
   name?: string;
   email?: string;
   role?: UserRole;
+  managerId?: number | null;
+}
+
+export async function fetchOwnProfile(): Promise<OwnProfile> {
+  const { data } = await api.get<{ success: true; data: OwnProfile }>('/users/me');
+  return data.data;
 }
 
 export async function fetchUsers(): Promise<UserSummary[]> {

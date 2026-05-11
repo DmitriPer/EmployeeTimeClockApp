@@ -1,10 +1,21 @@
 import bcrypt from 'bcryptjs';
-import { ErrorCode } from '@app/shared';
+import { ErrorCode, UserRole } from '@app/shared';
 import type { CreateUserDto, UpdateUserDto, ResetPasswordDto, ChangePasswordDto } from '@app/shared';
 import { AppError } from '../lib/errors.js';
 import * as repo from './users.repository.js';
 
 const BCRYPT_ROUNDS = 12;
+
+async function validateManagerId(managerId: number | null | undefined): Promise<void> {
+  if (managerId == null) return;
+  const manager = await repo.findUserById(managerId);
+  if (!manager) {
+    throw new AppError('Manager not found.', 404, ErrorCode.NOT_FOUND);
+  }
+  if (manager.role === UserRole.EMPLOYEE) {
+    throw new AppError('Assigned manager must have MANAGER or ADMIN role.', 400, ErrorCode.VALIDATION_ERROR);
+  }
+}
 
 export async function listUsers() {
   const rows = await repo.findAllUsers();
@@ -16,6 +27,7 @@ export async function listUsers() {
     role: u.role,
     isActive: u.is_active === 1,
     createdAt: u.created_at.toISOString(),
+    managerId: u.manager_id ?? null,
   }));
   return { users, total: users.length };
 }
@@ -30,6 +42,8 @@ export async function createUser(dto: CreateUserDto) {
     );
   }
 
+  await validateManagerId(dto.managerId);
+
   const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
   const id = await repo.insertUser({
     employeeId: dto.employeeId,
@@ -37,9 +51,17 @@ export async function createUser(dto: CreateUserDto) {
     email: dto.email,
     passwordHash,
     role: dto.role,
+    managerId: dto.managerId,
   });
 
-  return { id, employeeId: dto.employeeId, name: dto.name, email: dto.email, role: dto.role };
+  return {
+    id,
+    employeeId: dto.employeeId,
+    name: dto.name,
+    email: dto.email,
+    role: dto.role,
+    managerId: dto.managerId ?? null,
+  };
 }
 
 export async function updateUser(id: number, dto: UpdateUserDto) {
@@ -48,13 +70,18 @@ export async function updateUser(id: number, dto: UpdateUserDto) {
     throw new AppError('User not found.', 404, ErrorCode.NOT_FOUND);
   }
 
+  await validateManagerId(dto.managerId);
+
   const updates = {
     ...(dto.name !== undefined && { name: dto.name }),
     ...(dto.email !== undefined && { email: dto.email }),
     ...(dto.role !== undefined && { role: dto.role }),
+    ...(dto.managerId !== undefined && { manager_id: dto.managerId }),
   };
 
   await repo.updateUser(id, updates);
+
+  const updatedManagerId = updates.manager_id !== undefined ? updates.manager_id : (user.manager_id ?? null);
 
   return {
     id,
@@ -62,6 +89,7 @@ export async function updateUser(id: number, dto: UpdateUserDto) {
     email: updates.email ?? user.email,
     role: updates.role ?? user.role,
     isActive: user.is_active === 1,
+    managerId: updatedManagerId,
   };
 }
 
@@ -92,6 +120,27 @@ export async function changeOwnPassword(userId: number, dto: ChangePasswordDto):
   await repo.deleteUserRefreshTokens(userId);
 }
 
+export async function getOwnProfile(userId: number) {
+  const user = await repo.findUserById(userId);
+  if (!user) {
+    throw new AppError('User not found.', 404, ErrorCode.NOT_FOUND);
+  }
+  let managerName: string | null = null;
+  if (user.manager_id) {
+    const manager = await repo.findUserById(user.manager_id);
+    managerName = manager?.name ?? null;
+  }
+  return {
+    id: user.id,
+    employeeId: user.employee_id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    managerId: user.manager_id ?? null,
+    managerName,
+  };
+}
+
 export async function deactivateUser(requesterId: number, targetId: number) {
   if (requesterId === targetId) {
     throw new AppError('You cannot deactivate your own account.', 403, ErrorCode.CANNOT_DEACTIVATE_SELF);
@@ -101,6 +150,16 @@ export async function deactivateUser(requesterId: number, targetId: number) {
   if (!user) {
     throw new AppError('User not found.', 404, ErrorCode.NOT_FOUND);
   }
+
+  const activeReports = await repo.countActiveReportsByManagerId(targetId);
+  if (activeReports > 0) {
+    throw new AppError(
+      'Reassign or deactivate all employees assigned to this manager before deactivating.',
+      409,
+      ErrorCode.MANAGER_HAS_ACTIVE_REPORTS,
+    );
+  }
+
   if (user.is_active === 0) {
     throw new AppError('User is already inactive.', 409, ErrorCode.USER_ALREADY_INACTIVE);
   }

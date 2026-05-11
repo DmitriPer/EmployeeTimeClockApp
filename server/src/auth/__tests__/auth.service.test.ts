@@ -32,6 +32,7 @@ const mockUser = {
   email: 'dana@example.com',
   password_hash: '$2b$12$hashedpassword',
   role: UserRole.EMPLOYEE,
+  manager_id: null,
   is_active: 1,
   created_at: new Date(),
   updated_at: new Date(),

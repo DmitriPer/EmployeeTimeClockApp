@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ErrorCode } from '@app/shared';
+import { ErrorCode, UserRole } from '@app/shared';
 import { getPendingOvertimeRequests, reviewOvertimeRequest, getFlaggedSessions } from '../manager.service.js';
 
 vi.mock('../manager.repository.js', () => ({
@@ -9,7 +9,12 @@ vi.mock('../manager.repository.js', () => ({
   findFlaggedSessions: vi.fn(),
 }));
 
+vi.mock('../../users/users.repository.js', () => ({
+  findUserById: vi.fn(),
+}));
+
 import * as repo from '../manager.repository.js';
+import * as usersRepo from '../../users/users.repository.js';
 
 const now = new Date('2024-06-01T10:00:00.000Z');
 
@@ -29,14 +34,28 @@ const pendingOtRow = {
   employee_id: 'EMP001',
 };
 
+const employeeRow = {
+  id: 10,
+  employee_id: 'EMP001',
+  name: 'Dana Cohen',
+  email: 'dana@co.com',
+  password_hash: 'hash',
+  role: UserRole.EMPLOYEE,
+  is_active: 1,
+  manager_id: 3,
+  created_at: now,
+  updated_at: now,
+};
+
 beforeEach(() => vi.clearAllMocks());
 
 describe('getPendingOvertimeRequests', () => {
-  it('returns mapped overtime requests', async () => {
+  it('returns mapped overtime requests for ADMIN (no manager filter)', async () => {
     vi.mocked(repo.findPendingOvertimeRequests).mockResolvedValue([pendingOtRow]);
 
-    const result = await getPendingOvertimeRequests();
+    const result = await getPendingOvertimeRequests(5, UserRole.ADMIN);
 
+    expect(repo.findPendingOvertimeRequests).toHaveBeenCalledWith(undefined);
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       id: 1,
@@ -47,10 +66,18 @@ describe('getPendingOvertimeRequests', () => {
     });
   });
 
+  it('passes managerId to repo when requester is MANAGER', async () => {
+    vi.mocked(repo.findPendingOvertimeRequests).mockResolvedValue([]);
+
+    await getPendingOvertimeRequests(3, UserRole.MANAGER);
+
+    expect(repo.findPendingOvertimeRequests).toHaveBeenCalledWith(3);
+  });
+
   it('returns empty array when no pending requests', async () => {
     vi.mocked(repo.findPendingOvertimeRequests).mockResolvedValue([]);
 
-    const result = await getPendingOvertimeRequests();
+    const result = await getPendingOvertimeRequests(5, UserRole.ADMIN);
 
     expect(result).toEqual([]);
   });
@@ -61,7 +88,7 @@ describe('reviewOvertimeRequest', () => {
     vi.mocked(repo.findOvertimeRequestById).mockResolvedValue(undefined);
 
     await expect(
-      reviewOvertimeRequest({ requestId: 99, reviewerId: 5, action: 'APPROVED', note: null }),
+      reviewOvertimeRequest({ requestId: 99, reviewerId: 5, reviewerRole: UserRole.ADMIN, action: 'APPROVED', note: null }),
     ).rejects.toMatchObject({ code: ErrorCode.NOT_FOUND });
   });
 
@@ -72,7 +99,7 @@ describe('reviewOvertimeRequest', () => {
     });
 
     await expect(
-      reviewOvertimeRequest({ requestId: 1, reviewerId: 5, action: 'REJECTED', note: null }),
+      reviewOvertimeRequest({ requestId: 1, reviewerId: 5, reviewerRole: UserRole.ADMIN, action: 'REJECTED', note: null }),
     ).rejects.toMatchObject({ code: ErrorCode.OT_ALREADY_REVIEWED });
   });
 
@@ -83,6 +110,7 @@ describe('reviewOvertimeRequest', () => {
     await reviewOvertimeRequest({
       requestId: 1,
       reviewerId: 5,
+      reviewerRole: UserRole.ADMIN,
       action: 'APPROVED',
       note: 'Authorised',
     });
@@ -96,16 +124,35 @@ describe('reviewOvertimeRequest', () => {
     vi.mocked(repo.findOvertimeRequestById).mockResolvedValue(pendingOtRow);
     vi.mocked(repo.updateOvertimeRequest).mockResolvedValue(undefined);
 
-    await reviewOvertimeRequest({ requestId: 1, reviewerId: 5, action: 'REJECTED', note: null });
+    await reviewOvertimeRequest({ requestId: 1, reviewerId: 5, reviewerRole: UserRole.ADMIN, action: 'REJECTED', note: null });
 
     expect(repo.updateOvertimeRequest).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'REJECTED' }),
     );
   });
+
+  it('throws FORBIDDEN when MANAGER reviews request from an employee not assigned to them', async () => {
+    vi.mocked(repo.findOvertimeRequestById).mockResolvedValue(pendingOtRow);
+    vi.mocked(usersRepo.findUserById).mockResolvedValue({ ...employeeRow, manager_id: 99 });
+
+    await expect(
+      reviewOvertimeRequest({ requestId: 1, reviewerId: 3, reviewerRole: UserRole.MANAGER, action: 'APPROVED', note: null }),
+    ).rejects.toMatchObject({ code: ErrorCode.FORBIDDEN, statusCode: 403 });
+  });
+
+  it('allows MANAGER to review request from their own assigned employee', async () => {
+    vi.mocked(repo.findOvertimeRequestById).mockResolvedValue(pendingOtRow);
+    vi.mocked(usersRepo.findUserById).mockResolvedValue({ ...employeeRow, manager_id: 3 });
+    vi.mocked(repo.updateOvertimeRequest).mockResolvedValue(undefined);
+
+    await expect(
+      reviewOvertimeRequest({ requestId: 1, reviewerId: 3, reviewerRole: UserRole.MANAGER, action: 'APPROVED', note: null }),
+    ).resolves.toBeUndefined();
+  });
 });
 
 describe('getFlaggedSessions', () => {
-  it('returns { sessions, total } with correct shape', async () => {
+  it('returns { sessions, total } with correct shape for ADMIN', async () => {
     vi.mocked(repo.findFlaggedSessions).mockResolvedValue([
       {
         id: 42,
@@ -118,8 +165,9 @@ describe('getFlaggedSessions', () => {
       },
     ]);
 
-    const result = await getFlaggedSessions();
+    const result = await getFlaggedSessions(5, UserRole.ADMIN);
 
+    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(undefined, undefined);
     expect(result.total).toBe(1);
     expect(result.sessions[0]).toMatchObject({
       timeEntryId: 42,
@@ -130,18 +178,34 @@ describe('getFlaggedSessions', () => {
     });
   });
 
-  it('passes userId filter to repository', async () => {
+  it('passes managerId to repo when requester is MANAGER', async () => {
     vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
 
-    await getFlaggedSessions(10);
+    await getFlaggedSessions(3, UserRole.MANAGER);
 
-    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(10);
+    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(3, undefined);
+  });
+
+  it('passes employeeId filter alongside managerId for MANAGER', async () => {
+    vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
+
+    await getFlaggedSessions(3, UserRole.MANAGER, 10);
+
+    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(3, 10);
+  });
+
+  it('passes only employeeId filter (no managerId) for ADMIN', async () => {
+    vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
+
+    await getFlaggedSessions(5, UserRole.ADMIN, 10);
+
+    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(undefined, 10);
   });
 
   it('returns { sessions: [], total: 0 } when no flagged sessions', async () => {
     vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
 
-    const result = await getFlaggedSessions();
+    const result = await getFlaggedSessions(5, UserRole.ADMIN);
 
     expect(result).toEqual({ sessions: [], total: 0 });
   });
