@@ -33,12 +33,13 @@ const activeUser = {
 beforeEach(() => vi.clearAllMocks());
 
 describe('listUsers', () => {
-  it('returns mapped users with isActive boolean', async () => {
+  it('returns { users, total } with mapped isActive boolean', async () => {
     vi.mocked(repo.findAllUsers).mockResolvedValue([activeUser]);
 
     const result = await listUsers();
 
-    expect(result[0]).toMatchObject({
+    expect(result.total).toBe(1);
+    expect(result.users[0]).toMatchObject({
       id: 10,
       employeeId: 'EMP001',
       isActive: true,
@@ -56,7 +57,7 @@ describe('createUser', () => {
     ).rejects.toMatchObject({ code: ErrorCode.EMPLOYEE_ID_TAKEN });
   });
 
-  it('creates user and returns summary', async () => {
+  it('creates user and returns summary including email', async () => {
     vi.mocked(repo.findUserByEmployeeId).mockResolvedValue(undefined);
     vi.mocked(repo.insertUser).mockResolvedValue(42);
 
@@ -68,7 +69,7 @@ describe('createUser', () => {
       role: UserRole.EMPLOYEE,
     });
 
-    expect(result).toMatchObject({ id: 42, employeeId: 'NEW001', role: UserRole.EMPLOYEE });
+    expect(result).toMatchObject({ id: 42, employeeId: 'NEW001', email: 'new@co.com', role: UserRole.EMPLOYEE });
     expect(repo.insertUser).toHaveBeenCalledWith(
       expect.objectContaining({ passwordHash: 'hashed_password' }),
     );
@@ -84,20 +85,28 @@ describe('updateUser', () => {
     });
   });
 
-  it('calls updateUser repo with provided fields', async () => {
+  it('calls updateUser repo and returns updated user data', async () => {
     vi.mocked(repo.findUserById).mockResolvedValue(activeUser);
     vi.mocked(repo.updateUser).mockResolvedValue(undefined);
 
-    await updateUser(10, { name: 'Updated', role: UserRole.MANAGER });
+    const result = await updateUser(10, { name: 'Updated', role: UserRole.MANAGER });
 
     expect(repo.updateUser).toHaveBeenCalledWith(10, { name: 'Updated', role: UserRole.MANAGER });
+    expect(result).toMatchObject({
+      id: 10,
+      name: 'Updated',
+      email: 'dana@company.com',
+      role: UserRole.MANAGER,
+      isActive: true,
+    });
   });
 });
 
 describe('deactivateUser', () => {
-  it('throws CANNOT_DEACTIVATE_SELF when requester targets themselves', async () => {
+  it('throws CANNOT_DEACTIVATE_SELF with 403 when requester targets themselves', async () => {
     await expect(deactivateUser(10, 10)).rejects.toMatchObject({
       code: ErrorCode.CANNOT_DEACTIVATE_SELF,
+      statusCode: 403,
     });
   });
 
@@ -115,14 +124,15 @@ describe('deactivateUser', () => {
     });
   });
 
-  it('deactivates user and invalidates refresh tokens', async () => {
+  it('deactivates user, invalidates refresh tokens, returns { id, isActive: false }', async () => {
     vi.mocked(repo.findUserById).mockResolvedValue(activeUser);
     vi.mocked(repo.deactivateUser).mockResolvedValue(undefined);
     vi.mocked(repo.deleteUserRefreshTokens).mockResolvedValue(undefined);
 
-    await deactivateUser(1, 10);
+    const result = await deactivateUser(1, 10);
 
     expect(repo.deactivateUser).toHaveBeenCalledWith(10);
     expect(repo.deleteUserRefreshTokens).toHaveBeenCalledWith(10);
+    expect(result).toEqual({ id: 10, isActive: false });
   });
 });

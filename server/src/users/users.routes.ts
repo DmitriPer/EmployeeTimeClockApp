@@ -31,8 +31,8 @@ usersRouter.get(
   requireRoles(UserRole.MANAGER, UserRole.ADMIN),
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const users = await service.listUsers();
-      res.status(200).json({ success: true, data: users });
+      const result = await service.listUsers();
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }
@@ -68,8 +68,8 @@ usersRouter.patch(
       if (!parsed.success) {
         throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
       }
-      await service.updateUser(id, parsed.data);
-      res.status(200).json({ success: true, data: null });
+      const result = await service.updateUser(id, parsed.data);
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }
@@ -104,8 +104,8 @@ usersRouter.patch(
       const id = parseInt(String(req.params.id ?? ''), 10);
       if (isNaN(id)) throw new AppError('Invalid user ID.', 400, ErrorCode.VALIDATION_ERROR);
 
-      await service.deactivateUser(req.user!.id, id);
-      res.status(200).json({ success: true, data: null });
+      const result = await service.deactivateUser(req.user!.id, id);
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }
