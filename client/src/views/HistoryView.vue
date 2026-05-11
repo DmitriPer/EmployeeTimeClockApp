@@ -1,37 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { fetchHistory, type HistoryEntry } from '../../api/history.js';
-import { fetchUsers, type UserSummary } from '../../api/users.js';
-import { useAuthStore } from '../../stores/auth.js';
+import { fetchHistory, updateNote, type HistoryEntry } from '../api/history.js';
 
-const authStore = useAuthStore();
-const users = ref<UserSummary[]>([]);
-const selectedUserId = ref<number | null>(null);
 const entries = ref<HistoryEntry[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const from = ref('');
 const to = ref('');
+const editingNoteId = ref<number | null>(null);
+const noteInput = ref('');
 
-onMounted(async () => {
-  try {
-    users.value = await fetchUsers();
-    // Default to the logged-in user so managers see their own history immediately
-    const self = users.value.find((u) => u.id === authStore.user?.id);
-    selectedUserId.value = self?.id ?? users.value[0]?.id ?? null;
-    if (selectedUserId.value) await loadHistory();
-  } catch {
-    error.value = 'Failed to load users.';
-  }
-});
+onMounted(() => loadHistory());
 
 async function loadHistory(): Promise<void> {
-  if (!selectedUserId.value) return;
   loading.value = true;
   error.value = null;
   try {
     entries.value = await fetchHistory({
-      userId: selectedUserId.value,
       from: from.value || undefined,
       to: to.value || undefined,
     });
@@ -59,26 +44,29 @@ function formatMinutes(m: number | null): string {
   if (m < 60) return `${m}m`;
   return `${Math.floor(m / 60)}h ${m % 60 > 0 ? `${m % 60}m` : ''}`.trim();
 }
+
+function startEditNote(entry: HistoryEntry): void {
+  editingNoteId.value = entry.id;
+  noteInput.value = entry.employeeNote ?? '';
+}
+
+async function saveNote(entry: HistoryEntry): Promise<void> {
+  try {
+    await updateNote(entry.id, noteInput.value || null);
+    entry.employeeNote = noteInput.value || null;
+    editingNoteId.value = null;
+  } catch {
+    error.value = 'Failed to save note.';
+  }
+}
 </script>
 
 <template>
   <div class="space-y-4">
-    <h1 class="text-base font-semibold text-gray-800">Employee History</h1>
-
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
+    <h1 class="text-base font-semibold text-gray-800">My History</h1>
 
     <!-- Filters -->
-    <div class="flex flex-wrap items-center gap-3">
-      <label class="flex items-center gap-2 text-sm text-gray-600">
-        Employee
-        <select v-model="selectedUserId" class="rounded border border-gray-300 px-2 py-1 text-sm">
-          <option v-for="u in users" :key="u.id" :value="u.id">
-            {{ u.name }} ({{ u.employee_id }})
-          </option>
-        </select>
-      </label>
+    <div class="flex items-center gap-3">
       <label class="flex items-center gap-2 text-sm text-gray-600">
         From
         <input v-model="from" type="date" class="rounded border border-gray-300 px-2 py-1 text-sm" />
@@ -87,18 +75,24 @@ function formatMinutes(m: number | null): string {
         To
         <input v-model="to" type="date" class="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
-      <button @click="loadHistory" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
-        Load
+      <button
+        @click="loadHistory"
+        class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+      >
+        Apply
       </button>
     </div>
 
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-    <div v-else-if="entries.length === 0" class="text-sm text-gray-400">
-      Select an employee and press Load.
+    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+      {{ error }}
     </div>
 
+    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
+
+    <div v-else-if="entries.length === 0" class="text-sm text-gray-400">No entries found.</div>
+
     <!-- Table -->
-    <div v-if="entries.length > 0" class="overflow-x-auto rounded border border-gray-200">
+    <div v-else class="overflow-x-auto rounded border border-gray-200">
       <table class="min-w-full text-sm">
         <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
           <tr>
@@ -109,7 +103,7 @@ function formatMinutes(m: number | null): string {
             <th class="px-4 py-2">Break</th>
             <th class="px-4 py-2">Paid</th>
             <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Employee Note</th>
+            <th class="px-4 py-2">Note</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 bg-white">
@@ -133,7 +127,28 @@ function formatMinutes(m: number | null): string {
                 OT {{ entry.overtimeRequest.status.toLowerCase() }}
               </span>
             </td>
-            <td class="px-4 py-2 text-xs text-gray-500">{{ entry.employeeNote || '' }}</td>
+            <td class="px-4 py-2">
+              <template v-if="editingNoteId === entry.id">
+                <input
+                  v-model="noteInput"
+                  type="text"
+                  maxlength="1000"
+                  class="w-full rounded border border-gray-300 px-2 py-0.5 text-xs"
+                  @keyup.enter="saveNote(entry)"
+                  @keyup.escape="editingNoteId = null"
+                />
+                <div class="mt-1 flex gap-2">
+                  <button @click="saveNote(entry)" class="text-xs text-blue-600 hover:underline">Save</button>
+                  <button @click="editingNoteId = null" class="text-xs text-gray-400 hover:underline">Cancel</button>
+                </div>
+              </template>
+              <template v-else>
+                <span class="text-xs text-gray-500">{{ entry.employeeNote || '' }}</span>
+                <button @click="startEditNote(entry)" class="ml-1 text-xs text-gray-400 hover:text-blue-600">
+                  {{ entry.employeeNote ? 'Edit' : 'Add note' }}
+                </button>
+              </template>
+            </td>
           </tr>
         </tbody>
       </table>

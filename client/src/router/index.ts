@@ -28,7 +28,7 @@ export const router = createRouter({
         {
           path: 'history',
           name: 'history',
-          component: () => import('../views/HomeView.vue'),
+          component: () => import('../views/HistoryView.vue'),
         },
         {
           path: 'manager',
