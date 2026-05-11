@@ -1,4 +1,5 @@
 import { db } from '../db/connection.js';
+import { sql } from 'kysely';
 
 export async function findPendingOvertimeRequests() {
   return db
@@ -51,22 +52,23 @@ export async function updateOvertimeRequest(params: {
     .execute();
 }
 
-export async function findFlaggedSessions() {
+export async function findFlaggedSessions(userId?: number) {
   return db
     .selectFrom('time_entries as te')
     .innerJoin('users as u', 'u.id', 'te.user_id')
+    .leftJoin('audit_log as al', 'al.time_entry_id', 'te.id')
     .select([
       'te.id',
       'te.user_id',
       'te.clock_in_at',
       'te.clock_out_at',
-      'te.is_auto_closed_break',
-      'te.is_flagged',
-      'te.employee_note',
       'u.name as employee_name',
       'u.employee_id as employee_id',
+      sql<number>`COUNT(al.id)`.as('correction_count'),
     ])
     .where('te.is_flagged', '=', 1)
+    .$if(userId !== undefined, (qb) => qb.where('te.user_id', '=', userId!))
+    .groupBy(['te.id', 'te.user_id', 'te.clock_in_at', 'te.clock_out_at', 'u.name', 'u.employee_id'])
     .orderBy('te.clock_in_at', 'desc')
     .execute();
 }

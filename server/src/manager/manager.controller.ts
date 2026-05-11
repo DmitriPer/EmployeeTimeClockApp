@@ -51,13 +51,21 @@ export async function handleReviewOvertime(
   }
 }
 
+const FlaggedQuerySchema = z.object({
+  employeeId: z.coerce.number().int().positive().optional(),
+});
+
 export async function handleGetFlaggedSessions(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const data = await service.getFlaggedSessions();
+    const parsed = FlaggedQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      throw new AppError('Invalid query parameters.', 400, ErrorCode.VALIDATION_ERROR);
+    }
+    const data = await service.getFlaggedSessions(parsed.data.employeeId);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

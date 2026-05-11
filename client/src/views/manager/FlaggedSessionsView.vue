@@ -53,11 +53,11 @@ function formatTime(iso: string): string {
             <th class="px-4 py-2">In</th>
             <th class="px-4 py-2">Out</th>
             <th class="px-4 py-2">Reason</th>
-            <th class="px-4 py-2">Employee Note</th>
+            <th class="px-4 py-2">Corrections</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 bg-white">
-          <tr v-for="s in sessions" :key="s.id" class="hover:bg-gray-50">
+          <tr v-for="s in sessions" :key="s.timeEntryId" class="hover:bg-gray-50">
             <td class="px-4 py-2">
               <span class="font-medium text-gray-800">{{ s.employeeName }}</span>
               <span class="ml-1 text-xs text-gray-400">{{ s.employeeId }}</span>
@@ -66,11 +66,11 @@ function formatTime(iso: string): string {
             <td class="px-4 py-2 text-gray-700">{{ formatTime(s.clockInAt) }}</td>
             <td class="px-4 py-2 text-gray-500">{{ s.clockOutAt ? formatTime(s.clockOutAt) : '—' }}</td>
             <td class="px-4 py-2">
-              <span v-if="s.isAutoClosedBreak" class="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+              <span class="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
                 Break auto-closed
               </span>
             </td>
-            <td class="px-4 py-2 text-xs text-gray-500">{{ s.employeeNote || '' }}</td>
+            <td class="px-4 py-2 text-xs text-gray-500">{{ s.correctionCount > 0 ? `${s.correctionCount} correction(s)` : '—' }}</td>
           </tr>
         </tbody>
       </table>

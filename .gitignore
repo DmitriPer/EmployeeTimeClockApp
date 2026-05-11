@@ -15,3 +15,9 @@ _bmad-output/
 .mcp.json
 CLAUDE.md
 docs/
+.swarm/memory.db
+.swarm/memory.db-shm
+.swarm/memory.db-wal
+.swarm/schema.sql
+ruvector.db
+GEMINI.md

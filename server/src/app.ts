@@ -11,6 +11,7 @@ import { historyRouter } from './history/history.routes.js';
 import { usersRouter } from './users/users.routes.js';
 import { managerRouter } from './manager/manager.routes.js';
 import { exportRouter } from './export/export.routes.js';
+import { correctionsRouter } from './corrections/corrections.routes.js';
 
 export const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/manager', managerRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/time-entries', correctionsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({
