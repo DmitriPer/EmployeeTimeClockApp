@@ -9,5 +9,14 @@ export {
   type ClockOutDto,
   type NoteDto,
 } from './timeclock.schemas.js';
-export { CreateUserSchema, UpdateUserSchema, type CreateUserDto, type UpdateUserDto } from './user.schemas.js';
+export {
+  CreateUserSchema,
+  UpdateUserSchema,
+  ResetPasswordSchema,
+  ChangePasswordSchema,
+  type CreateUserDto,
+  type UpdateUserDto,
+  type ResetPasswordDto,
+  type ChangePasswordDto,
+} from './user.schemas.js';
 export { ExportQuerySchema, type ExportQueryDto } from './export.schemas.js';

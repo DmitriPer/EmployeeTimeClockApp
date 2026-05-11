@@ -31,6 +31,11 @@ export const router = createRouter({
           component: () => import('../views/HistoryView.vue'),
         },
         {
+          path: 'change-password',
+          name: 'change-password',
+          component: () => import('../views/ChangePasswordView.vue'),
+        },
+        {
           path: 'manager',
           component: RouterView,
           beforeEnter: requireRole([UserRole.MANAGER, UserRole.ADMIN]),

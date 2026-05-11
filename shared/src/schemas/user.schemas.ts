@@ -15,5 +15,16 @@ export const UpdateUserSchema = z.object({
   role: z.nativeEnum(UserRole).optional(),
 });
 
+export const ResetPasswordSchema = z.object({
+  password: z.string().min(8).max(100),
+});
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
+});
+
 export type CreateUserDto = z.infer<typeof CreateUserSchema>;
 export type UpdateUserDto = z.infer<typeof UpdateUserSchema>;
+export type ResetPasswordDto = z.infer<typeof ResetPasswordSchema>;
+export type ChangePasswordDto = z.infer<typeof ChangePasswordSchema>;
