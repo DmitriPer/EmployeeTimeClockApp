@@ -20,3 +20,4 @@ export {
   type ChangePasswordDto,
 } from './user.schemas.js';
 export { ExportQuerySchema, type ExportQueryDto } from './export.schemas.js';
+export { CorrectionSchema, type CorrectionDto } from './correction.schemas.js';

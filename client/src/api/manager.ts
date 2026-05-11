@@ -15,14 +15,13 @@ export interface OvertimeRequest {
 }
 
 export interface FlaggedSession {
-  id: number;
-  userId: number;
-  clockInAt: string;
-  clockOutAt: string | null;
-  isAutoClosedBreak: boolean;
-  employeeNote: string | null;
+  timeEntryId: number;
   employeeName: string;
   employeeId: string;
+  clockInAt: string;
+  clockOutAt: string | null;
+  flagReason: 'AUTO_CLOSED_BREAK';
+  correctionCount: number;
 }
 
 export async function fetchOvertimeQueue(): Promise<OvertimeRequest[]> {
@@ -39,6 +38,6 @@ export async function reviewOvertime(
 }
 
 export async function fetchFlaggedSessions(): Promise<FlaggedSession[]> {
-  const { data } = await api.get<{ success: true; data: FlaggedSession[] }>('/manager/flagged');
-  return data.data;
+  const { data } = await api.get<{ success: true; data: { sessions: FlaggedSession[]; total: number } }>('/manager/flagged');
+  return data.data.sessions;
 }

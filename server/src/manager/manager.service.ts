@@ -42,16 +42,16 @@ export async function reviewOvertimeRequest(params: {
   });
 }
 
-export async function getFlaggedSessions() {
-  const rows = await repo.findFlaggedSessions();
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.user_id,
-    clockInAt: r.clock_in_at.toISOString(),
-    clockOutAt: r.clock_out_at?.toISOString() ?? null,
-    isAutoClosedBreak: r.is_auto_closed_break === 1,
-    employeeNote: r.employee_note,
+export async function getFlaggedSessions(userId?: number) {
+  const rows = await repo.findFlaggedSessions(userId);
+  const sessions = rows.map((r) => ({
+    timeEntryId: r.id,
     employeeName: r.employee_name,
     employeeId: r.employee_id,
+    clockInAt: r.clock_in_at.toISOString(),
+    clockOutAt: r.clock_out_at?.toISOString() ?? null,
+    flagReason: 'AUTO_CLOSED_BREAK' as const,
+    correctionCount: Number(r.correction_count),
   }));
+  return { sessions, total: sessions.length };
 }

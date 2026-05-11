@@ -105,28 +105,44 @@ describe('reviewOvertimeRequest', () => {
 });
 
 describe('getFlaggedSessions', () => {
-  it('returns mapped flagged sessions', async () => {
+  it('returns { sessions, total } with correct shape', async () => {
     vi.mocked(repo.findFlaggedSessions).mockResolvedValue([
       {
         id: 42,
         user_id: 10,
         clock_in_at: new Date('2024-06-01T06:00:00.000Z'),
         clock_out_at: new Date('2024-06-01T15:00:00.000Z'),
-        is_auto_closed_break: 1,
-        is_flagged: 1,
-        employee_note: null,
         employee_name: 'Dana Cohen',
         employee_id: 'EMP001',
+        correction_count: 2,
       },
     ]);
 
     const result = await getFlaggedSessions();
 
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
-      id: 42,
-      isAutoClosedBreak: true,
+    expect(result.total).toBe(1);
+    expect(result.sessions[0]).toMatchObject({
+      timeEntryId: 42,
       employeeName: 'Dana Cohen',
+      employeeId: 'EMP001',
+      flagReason: 'AUTO_CLOSED_BREAK',
+      correctionCount: 2,
     });
+  });
+
+  it('passes userId filter to repository', async () => {
+    vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
+
+    await getFlaggedSessions(10);
+
+    expect(repo.findFlaggedSessions).toHaveBeenCalledWith(10);
+  });
+
+  it('returns { sessions: [], total: 0 } when no flagged sessions', async () => {
+    vi.mocked(repo.findFlaggedSessions).mockResolvedValue([]);
+
+    const result = await getFlaggedSessions();
+
+    expect(result).toEqual({ sessions: [], total: 0 });
   });
 });
