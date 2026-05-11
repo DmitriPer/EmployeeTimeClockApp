@@ -10,6 +10,7 @@ import { timeclockRouter } from './timeclock/timeclock.routes.js';
 import { historyRouter } from './history/history.routes.js';
 import { usersRouter } from './users/users.routes.js';
 import { managerRouter } from './manager/manager.routes.js';
+import { exportRouter } from './export/export.routes.js';
 
 export const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/timeclock', timeclockRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/manager', managerRouter);
+app.use('/api/export', exportRouter);
 
 app.use((_req, res) => {
   res.status(404).json({
