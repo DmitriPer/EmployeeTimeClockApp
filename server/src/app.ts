@@ -6,6 +6,7 @@ import { ErrorCode } from '@app/shared';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './lib/logger.js';
 import { authRouter } from './auth/auth.routes.js';
+import { timeclockRouter } from './timeclock/timeclock.routes.js';
 
 export const app = express();
 
@@ -15,6 +16,7 @@ app.use(cookieParser());
 app.use(pinoHttp({ logger }));
 
 app.use('/api/auth', authRouter);
+app.use('/api/timeclock', timeclockRouter);
 
 app.use((_req, res) => {
   res.status(404).json({
