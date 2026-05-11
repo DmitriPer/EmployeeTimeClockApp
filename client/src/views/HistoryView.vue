@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { fetchHistory, updateNote, type HistoryEntry } from '../api/history.js';
+import { downloadExport, type ExportFormat } from '../api/export.js';
 
 const entries = ref<HistoryEntry[]>([]);
 const loading = ref(false);
@@ -50,6 +51,20 @@ function startEditNote(entry: HistoryEntry): void {
   noteInput.value = entry.employeeNote ?? '';
 }
 
+const exporting = ref(false);
+
+async function handleExport(format: ExportFormat): Promise<void> {
+  exporting.value = true;
+  error.value = null;
+  try {
+    await downloadExport({ from: from.value || undefined, to: to.value || undefined, format });
+  } catch {
+    error.value = 'Export failed.';
+  } finally {
+    exporting.value = false;
+  }
+}
+
 async function saveNote(entry: HistoryEntry): Promise<void> {
   try {
     await updateNote(entry.id, noteInput.value || null);
@@ -81,6 +96,17 @@ async function saveNote(entry: HistoryEntry): Promise<void> {
       >
         Apply
       </button>
+      <div class="ml-auto flex gap-2">
+        <button
+          v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])"
+          :key="fmt"
+          :disabled="exporting"
+          @click="handleExport(fmt)"
+          class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 uppercase"
+        >
+          {{ fmt }}
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
@@ -97,13 +123,13 @@ async function saveNote(entry: HistoryEntry): Promise<void> {
         <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
           <tr>
             <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">In</th>
-            <th class="px-4 py-2">Out</th>
-            <th class="px-4 py-2">Gross</th>
-            <th class="px-4 py-2">Break</th>
-            <th class="px-4 py-2">Paid</th>
+            <th class="px-4 py-2">Clocked In</th>
+            <th class="px-4 py-2">Clocked Out</th>
+            <th class="px-4 py-2">Total Work Time</th>
+            <th class="px-4 py-2">Total Break Time</th>
+            <th class="px-4 py-2">Net Work Time</th>
             <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Note</th>
+            <th class="px-4 py-2">Notes</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 bg-white">
