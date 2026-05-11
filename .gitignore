@@ -6,6 +6,8 @@ dist/
 .env.*.local
 *.log
 .DS_Store
+docs/
+
 
 # AI tooling — not part of the codebase
 .claude/
