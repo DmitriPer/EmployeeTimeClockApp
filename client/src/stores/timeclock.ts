@@ -1,20 +1,30 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ClockStatus } from '@app/shared';
+import type { ClockStatusData } from '../api/timeclock.js';
 
 export const useTimeclockStore = defineStore('timeclock', () => {
-  const currentStatus = ref<ClockStatus>(ClockStatus.NOT_CLOCKED_IN);
-  const sessionStart = ref<string | null>(null);
+  const status = ref<ClockStatus>(ClockStatus.NOT_CLOCKED_IN);
+  const entryId = ref<number | null>(null);
+  const clockInAt = ref<string | null>(null);
+  const breakStartAt = ref<string | null>(null);
+  const totalBreakMinutes = ref<number>(0);
 
-  function setStatus(status: ClockStatus, start: string | null = null): void {
-    currentStatus.value = status;
-    sessionStart.value = start;
+  function applyStatus(data: ClockStatusData): void {
+    status.value = data.status;
+    entryId.value = data.entryId ?? null;
+    clockInAt.value = data.clockInAt ?? null;
+    breakStartAt.value = data.breakStartAt ?? null;
+    totalBreakMinutes.value = data.totalBreakMinutes;
   }
 
   function reset(): void {
-    currentStatus.value = ClockStatus.NOT_CLOCKED_IN;
-    sessionStart.value = null;
+    status.value = ClockStatus.NOT_CLOCKED_IN;
+    entryId.value = null;
+    clockInAt.value = null;
+    breakStartAt.value = null;
+    totalBreakMinutes.value = 0;
   }
 
-  return { currentStatus, sessionStart, setStatus, reset };
+  return { status, entryId, clockInAt, breakStartAt, totalBreakMinutes, applyStatus, reset };
 });
