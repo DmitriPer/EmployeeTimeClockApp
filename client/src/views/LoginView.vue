@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ErrorCode } from '@app/shared';
 import { loginUser } from '../api/auth.js';
 import { useAuthStore } from '../stores/auth.js';
+import PasswordInput from '../components/PasswordInput.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -65,13 +66,12 @@ async function handleSubmit(): Promise<void> {
           <label for="password" class="mb-1 block text-sm font-medium text-gray-700">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
             v-model="password"
-            type="password"
             autocomplete="current-password"
-            required
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
+            :required="true"
+            input-class="w-full rounded border border-gray-300 px-3 py-2 pr-12 text-sm focus:border-blue-600 focus:outline-none"
           />
         </div>
 

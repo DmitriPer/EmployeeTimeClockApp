@@ -75,7 +75,7 @@ function formatMinutes(m: number | null): string {
         Employee
         <select v-model="selectedUserId" class="rounded border border-gray-300 px-2 py-1 text-sm">
           <option v-for="u in users" :key="u.id" :value="u.id">
-            {{ u.name }} ({{ u.employee_id }})
+            {{ u.name }} ({{ u.employeeId }})
           </option>
         </select>
       </label>
