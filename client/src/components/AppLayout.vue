@@ -43,7 +43,7 @@ async function handleLogout(): Promise<void> {
           </RouterLink>
         </li>
 
-        <li v-if="!isManagerOrAdmin">
+        <li>
           <RouterLink
             to="/history"
             class="flex items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
