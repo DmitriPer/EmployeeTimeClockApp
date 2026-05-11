@@ -8,7 +8,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate": "tsx src/db/migrate.ts"
+    "migrate": "tsx src/db/migrate.ts",
+    "seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@app/shared": "*",
