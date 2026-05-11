@@ -12,6 +12,7 @@ import {
   type UserSummary,
   type CreateUserPayload,
 } from '../../api/users.js';
+import { getApiErrorMessage } from '../../api/utils.js';
 
 const authStore = useAuthStore();
 
@@ -94,9 +95,7 @@ async function submitCreate(): Promise<void> {
     await loadUsers();
     mode.value = 'list';
   } catch (e: unknown) {
-    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-      ?.response?.data?.error?.message;
-    error.value = msg ?? 'Failed to create user.';
+    error.value = getApiErrorMessage(e, 'Failed to create user.');
   }
 }
 
@@ -108,9 +107,7 @@ async function submitEdit(): Promise<void> {
     await loadUsers();
     mode.value = 'list';
   } catch (e: unknown) {
-    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-      ?.response?.data?.error?.message;
-    error.value = msg ?? 'Failed to update user.';
+    error.value = getApiErrorMessage(e, 'Failed to update user.');
   }
 }
 
@@ -121,9 +118,7 @@ async function handleDeactivate(u: UserSummary): Promise<void> {
     await deactivateUser(u.id);
     await loadUsers();
   } catch (e: unknown) {
-    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-      ?.response?.data?.error?.message;
-    error.value = msg ?? 'Failed to deactivate user.';
+    error.value = getApiErrorMessage(e, 'Failed to deactivate user.');
   }
 }
 

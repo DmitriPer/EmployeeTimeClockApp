@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { changeOwnPassword } from '../api/users.js';
 import { useAuthStore } from '../stores/auth.js';
 import PasswordInput from '../components/PasswordInput.vue';
+import { getApiErrorMessage } from '../api/utils.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -24,9 +25,7 @@ async function submit(): Promise<void> {
     authStore.clear();
     router.push('/login');
   } catch (e: unknown) {
-    const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-      ?.response?.data?.error?.message;
-    error.value = msg ?? 'Failed to change password.';
+    error.value = getApiErrorMessage(e, 'Failed to change password.');
   } finally {
     loading.value = false;
   }

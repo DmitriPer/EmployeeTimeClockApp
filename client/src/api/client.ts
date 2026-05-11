@@ -34,7 +34,8 @@ async function refreshTokenAndRetry(
   refreshing = true;
   try {
     const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-    const newToken: string = data.data.accessToken;
+    const newToken: string | undefined = data.data?.accessToken;
+    if (!newToken) throw new Error('No access token in refresh response');
     useAuthStore().setAccessToken(newToken);
     refreshQueue.forEach((cb) => cb(newToken));
     refreshQueue = [];
