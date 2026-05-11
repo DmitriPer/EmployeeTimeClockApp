@@ -48,6 +48,33 @@ export async function logout(userId: number): Promise<void> {
   await authRepo.deleteUserRefreshTokens(userId);
 }
 
+export async function refreshAccessToken(rawRefreshToken: string): Promise<{ accessToken: string }> {
+  const tokenHash = authRepo.hashToken(rawRefreshToken);
+  const stored = await authRepo.findRefreshTokenByHash(tokenHash);
+
+  if (!stored) {
+    throw new AppError('Invalid refresh token', 401, ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+  }
+
+  if (stored.expires_at < new Date()) {
+    await authRepo.deleteUserRefreshTokens(stored.user_id);
+    throw new AppError('Invalid refresh token', 401, ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+  }
+
+  const user = await authRepo.findUserById(stored.user_id);
+  if (!user || !user.is_active) {
+    throw new AppError('Invalid refresh token', 401, ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+  }
+
+  const accessToken = jwt.sign(
+    { sub: user.id, role: user.role },
+    env.JWT_SECRET,
+    { expiresIn: '15m' },
+  );
+
+  return { accessToken };
+}
+
 export function verifyAccessToken(token: string): { sub: number; role: UserRole } {
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as unknown as { sub: number; role: UserRole };
