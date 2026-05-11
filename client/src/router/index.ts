@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, RouterView } from 'vue-router';
 import { requireAuth, requireRole } from './guards.js';
 import { UserRole } from '@app/shared';
 
@@ -17,19 +17,54 @@ export const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: () => import('../components/AppLayout.vue'),
       beforeEnter: requireAuth,
-    },
-    {
-      path: '/manager',
-      beforeEnter: [requireAuth, requireRole([UserRole.MANAGER, UserRole.ADMIN])],
-      children: [],
-    },
-    {
-      path: '/admin',
-      beforeEnter: [requireAuth, requireRole([UserRole.ADMIN])],
-      children: [],
+      children: [
+        {
+          path: '',
+          name: 'clock',
+          component: () => import('../views/HomeView.vue'),
+        },
+        {
+          path: 'history',
+          name: 'history',
+          component: () => import('../views/HomeView.vue'),
+        },
+        {
+          path: 'manager',
+          component: RouterView,
+          beforeEnter: requireRole([UserRole.MANAGER, UserRole.ADMIN]),
+          children: [
+            {
+              path: 'overtime',
+              name: 'manager-overtime',
+              component: () => import('../views/manager/OvertimeQueueView.vue'),
+            },
+            {
+              path: 'flagged',
+              name: 'manager-flagged',
+              component: () => import('../views/manager/FlaggedSessionsView.vue'),
+            },
+            {
+              path: 'history',
+              name: 'manager-history',
+              component: () => import('../views/manager/ManagerHistoryView.vue'),
+            },
+          ],
+        },
+        {
+          path: 'admin',
+          component: RouterView,
+          beforeEnter: requireRole([UserRole.ADMIN]),
+          children: [
+            {
+              path: 'users',
+              name: 'admin-users',
+              component: () => import('../views/admin/UserManagementView.vue'),
+            },
+          ],
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',
