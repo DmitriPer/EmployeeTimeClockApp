@@ -6,8 +6,6 @@ dist/
 .env.*.local
 *.log
 .DS_Store
-docs/
-
 
 # AI tooling — not part of the codebase
 .claude/
@@ -16,3 +14,4 @@ _bmad/
 _bmad-output/
 .mcp.json
 CLAUDE.md
+docs/
