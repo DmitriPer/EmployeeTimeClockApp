@@ -39,6 +39,7 @@ function formatMinutes(m: number | null): string {
 
 function buildStatus(e: HistoryEntry): string {
   const parts: string[] = [];
+  if (e.isRetroactive) parts.push('Retroactive');
   if (e.isCorrected) parts.push('Corrected');
   if (e.isFlagged) parts.push('Flagged');
   if (e.overtimeRequest) {

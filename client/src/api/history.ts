@@ -31,6 +31,7 @@ export interface HistoryEntry {
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
   isCorrected: boolean;
+  isRetroactive: boolean;
   employeeNote: string | null;
   breaks: BreakRecord[];
   overtimeRequest: OvertimeRecord | null;

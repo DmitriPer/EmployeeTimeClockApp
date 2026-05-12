@@ -31,6 +31,7 @@ const openEntry = {
   clock_out_at: clockOutAt,
   is_auto_closed_break: 0,
   is_flagged: 1,
+  is_retroactive: 0,
   employee_note: null,
   created_at: clockInAt,
 };

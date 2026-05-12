@@ -8,6 +8,8 @@ import {
   handleGetFlaggedSessions,
   handleGetCorrectionQueue,
   handleReviewCorrectionRequest,
+  handleGetRetroactiveQueue,
+  handleReviewRetroactiveRequest,
 } from './manager.controller.js';
 
 export const managerRouter = Router();
@@ -19,3 +21,5 @@ managerRouter.patch('/overtime/:id/review', handleReviewOvertime);
 managerRouter.get('/flagged', handleGetFlaggedSessions);
 managerRouter.get('/correction-requests', handleGetCorrectionQueue);
 managerRouter.patch('/correction-requests/:id/review', handleReviewCorrectionRequest);
+managerRouter.get('/retroactive-requests', handleGetRetroactiveQueue);
+managerRouter.patch('/retroactive-requests/:id/review', handleReviewRetroactiveRequest);

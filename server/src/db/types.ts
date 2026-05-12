@@ -28,6 +28,7 @@ export interface TimeEntriesTable {
   clock_out_at: Date | null;
   is_auto_closed_break: Generated<number>;
   is_flagged: Generated<number>;
+  is_retroactive: Generated<number>;
   employee_note: string | null;
   created_at: Generated<Date>;
 }
@@ -78,6 +79,21 @@ export interface CorrectionRequestsTable {
   updated_at: Generated<Date>;
 }
 
+export interface RetroactiveEntryRequestsTable {
+  id: Generated<number>;
+  user_id: number;
+  requested_date: string;
+  clock_in_time: string;
+  clock_out_time: string;
+  breaks_json: string | null;
+  employee_note: string;
+  status: Generated<'PENDING' | 'APPROVED' | 'REJECTED'>;
+  reviewed_by: number | null;
+  reviewed_at: Date | null;
+  manager_note: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -86,4 +102,5 @@ export interface Database {
   overtime_requests: OvertimeRequestsTable;
   audit_log: AuditLogTable;
   correction_requests: CorrectionRequestsTable;
+  retroactive_entry_requests: RetroactiveEntryRequestsTable;
 }

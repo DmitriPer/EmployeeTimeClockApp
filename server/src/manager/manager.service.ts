@@ -239,3 +239,27 @@ export async function getFlaggedSessions(
   }));
   return { sessions, total: sessions.length };
 }
+
+import * as retroactiveService from '../retroactive-requests/retroactive-requests.service.js';
+
+export async function getRetroactiveRequests(
+  reviewerId: number,
+  reviewerRole: string,
+) {
+  return retroactiveService.getPendingRetroactiveRequests(reviewerId, reviewerRole);
+}
+
+export async function reviewRetroactiveRequest(params: {
+  requestId: number;
+  reviewerId: number;
+  reviewerRole: string;
+  action: 'APPROVED' | 'REJECTED';
+  note: string | null;
+}) {
+  return retroactiveService.reviewRetroactiveRequest(
+    params.reviewerId,
+    params.requestId,
+    params.action,
+    params.note,
+  );
+}
