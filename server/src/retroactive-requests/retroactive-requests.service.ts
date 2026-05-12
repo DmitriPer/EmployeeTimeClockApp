@@ -75,12 +75,14 @@ export async function submitRetroactiveRequest(
     clockOutTime: string;
     breaks?: BreakRequest[];
     employeeNote: string;
+    requesterRole?: string;
   },
 ): Promise<RetroactiveRequestResult> {
   if (!params.employeeNote?.trim()) {
     throw new AppError('An explanation is required', 400, ErrorCode.VALIDATION_ERROR);
   }
-  if (!isCurrentMonth(params.date)) {
+  const isManager = params.requesterRole === 'MANAGER' || params.requesterRole === 'ADMIN';
+  if (!isManager && !isCurrentMonth(params.date)) {
     throw new AppError(
       'You can only submit retroactive entries for the current month.',
       403,

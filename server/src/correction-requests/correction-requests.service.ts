@@ -61,12 +61,14 @@ function toResult(row: Awaited<ReturnType<typeof repo.findCorrectionRequestById>
 
 export async function submitCorrectionRequest(
   requesterId: number,
+  requesterRole: string,
   dto: CorrectionRequestDto,
 ): Promise<CorrectionRequestResult> {
   const entry = await findEntryById(dto.timeEntryId);
   if (!entry) throw new AppError('Time entry not found.', 404, ErrorCode.NOT_FOUND);
   if (entry.user_id !== requesterId) throw new AppError('Access denied.', 403, ErrorCode.FORBIDDEN);
-  if (!isCurrentMonthEntry(entry.clock_in_at)) {
+  const isManager = requesterRole === 'MANAGER' || requesterRole === 'ADMIN';
+  if (!isManager && !isCurrentMonthEntry(entry.clock_in_at)) {
     throw new AppError('Only entries from the current month can be edited.', 403, ErrorCode.PERIOD_LOCKED);
   }
 

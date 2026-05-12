@@ -21,7 +21,7 @@ correctionRequestsRouter.post(
           ErrorCode.VALIDATION_ERROR,
         );
       }
-      const result = await service.submitCorrectionRequest(req.user!.id, parsed.data);
+      const result = await service.submitCorrectionRequest(req.user!.id, req.user!.role, parsed.data);
       res.status(201).json({ success: true, data: result });
     } catch (err) {
       next(err);
