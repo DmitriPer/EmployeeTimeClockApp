@@ -12,6 +12,7 @@ import { usersRouter } from './users/users.routes.js';
 import { managerRouter } from './manager/manager.routes.js';
 import { exportRouter } from './export/export.routes.js';
 import { correctionsRouter } from './corrections/corrections.routes.js';
+import { correctionRequestsRouter } from './correction-requests/correction-requests.routes.js';
 
 export const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/manager', managerRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/time-entries', correctionsRouter);
+app.use('/api/correction-requests', correctionRequestsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({
