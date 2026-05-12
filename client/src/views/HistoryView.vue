@@ -285,7 +285,7 @@ function handleModalDeleted(): void {
 
     <!-- Retroactive entry requests -->
     <hr class="border-gray-200" />
-    <RetroactiveRequestsSection />
+    <RetroactiveRequestsSection :month="`${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, '0')}`" />
 
     <!-- Edit modal -->
     <EntryEditModal

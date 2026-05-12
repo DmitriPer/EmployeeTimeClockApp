@@ -9,9 +9,11 @@ import {
   type RetroactiveRequestResult,
 } from '../api/retroactiveRequests.js';
 
+const props = defineProps<{ month: string }>();
+
 const TZ = 'Asia/Jerusalem';
 
-const requests = ref<RetroactiveRequestResult[]>([]);
+const allRequests = ref<RetroactiveRequestResult[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -24,7 +26,14 @@ const formNote = ref('');
 const submitting = ref(false);
 const formError = ref<string | null>(null);
 
-const hasPending = computed(() => requests.value.some((r) => r.status === 'PENDING'));
+const currentMonth = computed(() => DateTime.now().setZone(TZ).toFormat('yyyy-MM'));
+const isViewingCurrentMonth = computed(() => props.month === currentMonth.value);
+
+const requests = computed(() =>
+  allRequests.value.filter((r) => r.date.startsWith(props.month)),
+);
+
+const hasPending = computed(() => allRequests.value.some((r) => r.status === 'PENDING'));
 
 const today = computed(() => DateTime.now().setZone(TZ).toISODate()!);
 const monthMin = computed(() => DateTime.now().setZone(TZ).startOf('month').toISODate()!);
@@ -32,7 +41,7 @@ const monthMin = computed(() => DateTime.now().setZone(TZ).startOf('month').toIS
 onMounted(async () => {
   loading.value = true;
   try {
-    requests.value = await getMyRetroactiveRequests();
+    allRequests.value = await getMyRetroactiveRequests();
   } catch {
     error.value = 'Failed to load requests.';
   } finally {
@@ -73,7 +82,7 @@ async function submitForm(): Promise<void> {
       breaks: formBreaks.value.length ? formBreaks.value : undefined,
       employeeNote: formNote.value,
     });
-    requests.value = [result, ...requests.value];
+    allRequests.value = [result, ...allRequests.value];
     showForm.value = false;
   } catch (e: any) {
     formError.value = e?.response?.data?.error?.message ?? 'Failed to submit request.';
@@ -86,7 +95,7 @@ async function handleCancel(id: number): Promise<void> {
   error.value = null;
   try {
     await cancelRetroactiveRequest(id);
-    requests.value = requests.value.filter((r) => r.id !== id);
+    allRequests.value = allRequests.value.filter((r) => r.id !== id);
   } catch {
     error.value = 'Failed to cancel request.';
   }
@@ -104,7 +113,7 @@ function statusClass(status: string): string {
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-semibold text-gray-700">Retroactive Entry Requests</h2>
       <button
-        v-if="!showForm && !hasPending"
+        v-if="isViewingCurrentMonth && !showForm && !hasPending"
         @click="openForm"
         class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
       >
@@ -194,7 +203,7 @@ function statusClass(status: string): string {
     <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
 
     <div v-else-if="requests.length === 0 && !showForm" class="text-sm text-gray-400">
-      No retroactive requests.
+      No retroactive requests for this month.
     </div>
 
     <div v-else-if="requests.length > 0" class="space-y-2">
