@@ -6,11 +6,17 @@ vi.mock('../history.repository.js', () => ({
   findEntriesForUser: vi.fn(),
   findBreaksByEntryIds: vi.fn(),
   findOvertimeByEntryIds: vi.fn(),
+  findCorrectedEntryIds: vi.fn(),
   findEntryById: vi.fn(),
   updateEntryNote: vi.fn(),
 }));
 
+vi.mock('../../correction-requests/correction-requests.repository.js', () => ({
+  findCorrectionRequestsByEntryIds: vi.fn(),
+}));
+
 import * as repo from '../history.repository.js';
+import * as correctionRepo from '../../correction-requests/correction-requests.repository.js';
 
 const clockIn = new Date('2024-06-01T06:00:00.000Z');
 const clockOut = new Date('2024-06-01T15:30:00.000Z'); // 9.5h gross
@@ -26,7 +32,11 @@ const entry = {
   created_at: clockIn,
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(repo.findCorrectedEntryIds).mockResolvedValue([]);
+  vi.mocked(correctionRepo.findCorrectionRequestsByEntryIds).mockResolvedValue([]);
+});
 
 describe('getHistory', () => {
   it('returns empty array when no entries exist', async () => {

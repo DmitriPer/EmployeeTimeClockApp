@@ -45,7 +45,7 @@ describe('listUsers', () => {
   it('returns { users, total } with mapped isActive boolean and managerId', async () => {
     vi.mocked(repo.findAllUsers).mockResolvedValue([activeUser]);
 
-    const result = await listUsers();
+    const result = await listUsers({ id: 1, role: UserRole.ADMIN });
 
     expect(result.total).toBe(1);
     expect(result.users[0]).toMatchObject({

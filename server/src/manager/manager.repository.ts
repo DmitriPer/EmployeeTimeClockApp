@@ -174,10 +174,8 @@ export async function approveCorrection(
     .execute();
 
   await trx
-    .updateTable('overtime_requests')
-    .set({ status: 'REJECTED' })
+    .deleteFrom('overtime_requests')
     .where('time_entry_id', '=', params.timeEntryId)
-    .where('status', 'in', ['PENDING', 'APPROVED'])
     .execute();
 
   await trx

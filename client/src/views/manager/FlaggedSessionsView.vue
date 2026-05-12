@@ -18,11 +18,11 @@ onMounted(async () => {
 });
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
+  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('he-IL', {
+  return new Date(iso).toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Jerusalem',

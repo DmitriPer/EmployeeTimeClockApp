@@ -9,6 +9,15 @@ export async function findAllUsers() {
     .execute();
 }
 
+export async function findUsersForManager(managerId: number) {
+  return db
+    .selectFrom('users')
+    .select(['id', 'employee_id', 'name', 'email', 'role', 'is_active', 'manager_id', 'created_at'])
+    .where((eb) => eb.or([eb('id', '=', managerId), eb('manager_id', '=', managerId)]))
+    .orderBy('name', 'asc')
+    .execute();
+}
+
 export async function findUserById(id: number) {
   return db
     .selectFrom('users')

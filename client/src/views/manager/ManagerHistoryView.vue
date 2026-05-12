@@ -4,6 +4,7 @@ import { fetchHistory, type HistoryEntry } from '../../api/history.js';
 import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
+import BreakPopover from '../../components/BreakPopover.vue';
 
 const authStore = useAuthStore();
 const users = ref<UserSummary[]>([]);
@@ -63,11 +64,11 @@ async function handleExport(format: ExportFormat): Promise<void> {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
+  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('he-IL', {
+  return new Date(iso).toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Jerusalem',
@@ -149,8 +150,13 @@ function formatMinutes(m: number | null): string {
             <td class="px-4 py-2 text-gray-700">{{ formatTime(entry.clockInAt) }}</td>
             <td class="px-4 py-2 text-gray-500">{{ entry.clockOutAt ? formatTime(entry.clockOutAt) : '—' }}</td>
             <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.grossMinutes) }}</td>
-            <td class="px-4 py-2" :class="entry.excessBreakMinutes > 0 ? 'text-amber-600 font-medium' : 'text-gray-700'">
-              {{ formatMinutes(entry.totalBreakMinutes) }}
+            <td class="px-4 py-2">
+              <BreakPopover
+                :breaks="entry.breaks"
+                :total-minutes="entry.totalBreakMinutes"
+                :excess-minutes="entry.excessBreakMinutes"
+                :is-auto-closed-break="entry.isAutoClosedBreak"
+              />
             </td>
             <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
             <td class="px-4 py-2">

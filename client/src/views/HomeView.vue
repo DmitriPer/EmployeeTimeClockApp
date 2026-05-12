@@ -62,7 +62,7 @@ function formatMinutes(m: number): string {
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('he-IL', {
+  return new Date(iso).toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Jerusalem',
