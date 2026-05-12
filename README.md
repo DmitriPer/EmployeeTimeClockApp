@@ -81,11 +81,29 @@ npm run migrate -w server
 
 ### 6. Seed the initial admin user
 
+Set the admin credentials in your environment (or in `server/.env`) before running the seed:
+
+```env
+SEED_ADMIN_PASSWORD=your_strong_password
+SEED_ADMIN_ID=ADM001          # must follow the ADM#### format
+SEED_ADMIN_NAME=Admin         # optional, default: Admin
+SEED_ADMIN_EMAIL=admin@company.com  # optional
+```
+
+Then run:
+
 ```bash
 npm run seed -w server
 ```
 
-This creates the first admin account (`ADMIN001` / `Admin1234!`). Additional users are created through the Admin → User Management panel in the app.
+This creates the first admin account. Additional users are created through the Admin → User Management panel in the app.
+
+> **Employee ID format rules:**
+> - Admins: `ADM####` (e.g. `ADM001`)
+> - Managers: `MGR####` (e.g. `MGR001`)
+> - Employees: `EMP####` (e.g. `EMP001`)
+>
+> These prefixes are enforced throughout the system and must be followed when creating users.
 
 ---
 
@@ -119,19 +137,6 @@ npm run test -w server
 
 ---
 
-## Demo Accounts
-
-| Role | Employee ID | Password |
-|---|---|---|
-| Admin | `ADMIN001` | `Admin1234!` |
-| Manager | `MGR001` | `Meneger1234!` |
-| Manager | `MGR002` | `Mgr1234!` |
-| Employee | `EMP001` | `Employee1234!` |
-| Employee | `EMP002` | `Emp2!134` |
-
-> These accounts are created through the User Management panel after seeding the initial admin. Log in as `ADMIN001` to create them.
-
----
 
 ## Project Structure
 

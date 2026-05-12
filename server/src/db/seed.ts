@@ -2,10 +2,15 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { db } from './connection.js';
 
-const EMPLOYEE_ID = 'ADMIN001';
-const NAME = 'Admin';
-const EMAIL = 'admin@company.com';
-const PASSWORD = 'Admin1234!';
+const EMPLOYEE_ID = process.env.SEED_ADMIN_ID ?? 'ADM001';
+const NAME = process.env.SEED_ADMIN_NAME ?? 'Admin';
+const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@company.com';
+const PASSWORD = process.env.SEED_ADMIN_PASSWORD;
+
+if (!PASSWORD) {
+  console.error('Error: SEED_ADMIN_PASSWORD environment variable is required.');
+  process.exit(1);
+}
 
 async function seed(): Promise<void> {
   const existing = await db
@@ -19,7 +24,7 @@ async function seed(): Promise<void> {
     process.exit(0);
   }
 
-  const passwordHash = await bcrypt.hash(PASSWORD, 12);
+  const passwordHash = await bcrypt.hash(PASSWORD!, 12);
 
   await db
     .insertInto('users')
