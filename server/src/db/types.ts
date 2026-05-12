@@ -30,6 +30,8 @@ export interface TimeEntriesTable {
   is_flagged: Generated<number>;
   is_retroactive: Generated<number>;
   employee_note: string | null;
+  manager_reviewed_at: Date | null;
+  manager_reviewed_by: number | null;
   created_at: Generated<Date>;
 }
 

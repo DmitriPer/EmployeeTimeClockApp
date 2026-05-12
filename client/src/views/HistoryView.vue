@@ -221,6 +221,7 @@ function handleModalDeleted(): void {
                 <span v-if="entry.isRetroactive" class="mr-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">Retroactive</span>
                 <span v-if="entry.isCorrected" class="mr-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">Corrected</span>
                 <span v-if="entry.isFlagged" class="mr-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Flagged</span>
+                <span v-if="entry.isBreakReviewed" class="mr-1 inline-block rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Break fixed</span>
                 <span v-if="entry.overtimeRequest" class="inline-block rounded-full px-2 py-0.5 text-xs"
                   :class="{
                     'bg-yellow-100 text-yellow-700': entry.overtimeRequest.status === 'PENDING',

@@ -7,6 +7,7 @@ import {
   updateCorrectionRequest,
   deleteCorrectionRequest,
 } from '../api/correctionRequests.js';
+import TimeInput from './TimeInput.vue';
 
 const props = defineProps<{
   entry: HistoryEntry;
@@ -171,13 +172,11 @@ async function handleDelete(): Promise<void> {
       <div class="grid grid-cols-2 gap-4">
         <label class="flex flex-col gap-1 text-sm text-gray-600">
           Clock In
-          <input v-model="clockIn" type="time" required
-            class="rounded border border-gray-300 px-2 py-1 text-sm" />
+          <TimeInput v-model="clockIn" :required="true" input-class="rounded border px-2 py-1 text-sm" />
         </label>
         <label class="flex flex-col gap-1 text-sm text-gray-600">
           Clock Out
-          <input v-model="clockOut" type="time"
-            class="rounded border border-gray-300 px-2 py-1 text-sm" />
+          <TimeInput v-model="clockOut" input-class="rounded border px-2 py-1 text-sm" />
         </label>
       </div>
 
@@ -185,11 +184,9 @@ async function handleDelete(): Promise<void> {
       <div class="space-y-2">
         <p class="text-sm font-medium text-gray-600">Breaks</p>
         <div v-for="(b, i) in breaks" :key="i" class="flex items-center gap-2">
-          <input v-model="b.start" type="time"
-            class="rounded border border-gray-300 px-2 py-1 text-sm w-28" />
+          <TimeInput v-model="b.start" input-class="rounded border px-2 py-1 text-sm w-28" />
           <span class="text-gray-400 text-xs">to</span>
-          <input v-model="b.end" type="time"
-            class="rounded border border-gray-300 px-2 py-1 text-sm w-28" />
+          <TimeInput v-model="b.end" input-class="rounded border px-2 py-1 text-sm w-28" />
           <button @click="removeBreak(i)" aria-label="Remove break"
             class="text-xs text-red-400 hover:text-red-600">✕</button>
         </div>

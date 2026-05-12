@@ -144,6 +144,25 @@ const FlaggedQuerySchema = z.object({
   employeeId: z.coerce.number().int().positive().optional(),
 });
 
+export async function handleReviewFlaggedSession(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const timeEntryId = parseInt(String(req.params.timeEntryId ?? ''), 10);
+    if (isNaN(timeEntryId)) throw new AppError('Invalid entry ID.', 400, ErrorCode.VALIDATION_ERROR);
+    const { breakEndTime } = req.body;
+    if (!breakEndTime || typeof breakEndTime !== 'string') {
+      throw new AppError('breakEndTime is required.', 400, ErrorCode.VALIDATION_ERROR);
+    }
+    await service.reviewFlaggedSession(req.user!.id, req.user!.role, timeEntryId, breakEndTime);
+    res.status(200).json({ success: true, data: null });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function handleGetFlaggedSessions(
   req: Request,
   res: Response,

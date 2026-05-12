@@ -8,6 +8,7 @@ import {
   cancelRetroactiveRequest,
   type RetroactiveRequestResult,
 } from '../api/retroactiveRequests.js';
+import TimeInput from './TimeInput.vue';
 
 const props = defineProps<{ month: string }>();
 
@@ -17,7 +18,7 @@ const allRequests = ref<RetroactiveRequestResult[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const showForm = ref(false);
+const showModal = ref(false);
 const formDate = ref('');
 const formClockIn = ref('');
 const formClockOut = ref('');
@@ -49,14 +50,19 @@ onMounted(async () => {
   }
 });
 
-function openForm(): void {
+function openModal(): void {
   formDate.value = today.value;
   formClockIn.value = '';
   formClockOut.value = '';
   formBreaks.value = [];
   formNote.value = '';
   formError.value = null;
-  showForm.value = true;
+  showModal.value = true;
+}
+
+function closeModal(): void {
+  showModal.value = false;
+  formError.value = null;
 }
 
 function addBreak(): void {
@@ -83,7 +89,7 @@ async function submitForm(): Promise<void> {
       employeeNote: formNote.value,
     });
     allRequests.value = [result, ...allRequests.value];
-    showForm.value = false;
+    closeModal();
   } catch (e: any) {
     formError.value = e?.response?.data?.error?.message ?? 'Failed to submit request.';
   } finally {
@@ -113,8 +119,8 @@ function statusClass(status: string): string {
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-semibold text-gray-700">Retroactive Entry Requests</h2>
       <button
-        v-if="isViewingCurrentMonth && !showForm && !hasPending"
-        @click="openForm"
+        v-if="isViewingCurrentMonth && !showModal && !hasPending"
+        @click="openModal"
         class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
       >
         Request Missing Entry
@@ -125,88 +131,13 @@ function statusClass(status: string): string {
       {{ error }}
     </div>
 
-    <!-- Inline form -->
-    <div v-if="showForm" class="rounded border border-blue-200 bg-blue-50 p-4 space-y-3">
-      <p class="text-sm font-medium text-gray-700">New Retroactive Entry</p>
-
-      <label class="flex flex-col gap-1 text-sm text-gray-600">
-        Date
-        <input
-          v-model="formDate"
-          type="date"
-          :min="monthMin"
-          :max="today"
-          required
-          class="w-40 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
-        />
-      </label>
-
-      <div class="grid grid-cols-2 gap-4">
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock In
-          <input v-model="formClockIn" type="time" required
-            class="rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock Out
-          <input v-model="formClockOut" type="time" required
-            class="rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
-        </label>
-      </div>
-
-      <div class="space-y-2">
-        <p class="text-sm text-gray-600">Breaks <span class="text-gray-400 text-xs">(optional)</span></p>
-        <div v-for="(b, i) in formBreaks" :key="i" class="flex items-center gap-2">
-          <input v-model="b.start" type="time"
-            class="w-28 rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
-          <span class="text-xs text-gray-400">to</span>
-          <input v-model="b.end" type="time"
-            class="w-28 rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
-          <button @click="removeBreak(i)" aria-label="Remove break"
-            class="text-xs text-red-400 hover:text-red-600">✕</button>
-        </div>
-        <button @click="addBreak" class="text-xs text-blue-600 hover:underline">+ Add break</button>
-      </div>
-
-      <label class="flex flex-col gap-1 text-sm text-gray-600">
-        Reason <span class="text-red-500">*</span>
-        <textarea
-          v-model="formNote"
-          rows="2"
-          maxlength="1000"
-          placeholder="Explain why this entry was missed"
-          class="resize-none rounded border border-gray-300 bg-white px-2 py-1 text-sm"
-        />
-      </label>
-
-      <div v-if="formError" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-        {{ formError }}
-      </div>
-
-      <div class="flex gap-2">
-        <button
-          @click="submitForm"
-          :disabled="submitting"
-          class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {{ submitting ? 'Submitting…' : 'Submit' }}
-        </button>
-        <button
-          @click="showForm = false"
-          class="rounded border border-gray-300 px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-
     <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
 
-    <div v-else-if="requests.length === 0 && !showForm" class="text-sm text-gray-400">
+    <div v-else-if="requests.length === 0" class="text-sm text-gray-400">
       No retroactive requests for this month.
     </div>
 
-    <div v-else-if="requests.length > 0" class="space-y-2">
+    <div v-else class="space-y-2">
       <div
         v-for="req in requests"
         :key="req.id"
@@ -219,10 +150,7 @@ function statusClass(status: string): string {
           </span>
         </div>
         <p class="text-xs text-gray-500">{{ req.clockInTime }} — {{ req.clockOutTime }}</p>
-        <p
-          v-if="req.breaks && req.breaks.length"
-          class="text-xs text-gray-400"
-        >
+        <p v-if="req.breaks && req.breaks.length" class="text-xs text-gray-400">
           Breaks: {{ req.breaks.map((b) => `${b.start}–${b.end}`).join(', ') }}
         </p>
         <p class="text-xs italic text-gray-500">"{{ req.employeeNote }}"</p>
@@ -237,4 +165,88 @@ function statusClass(status: string): string {
       </div>
     </div>
   </div>
+
+  <!-- New Retroactive Entry Modal -->
+  <Teleport to="body">
+    <div
+      v-if="showModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      @click.self="closeModal"
+    >
+      <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <p class="font-semibold text-gray-800">Request Missing Entry</p>
+          <button @click="closeModal" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+        </div>
+
+        <div class="px-6 py-5 space-y-4">
+          <label class="flex flex-col gap-1 text-sm text-gray-600">
+            Date
+            <input
+              v-model="formDate"
+              type="date"
+              :min="monthMin"
+              :max="today"
+              required
+              class="w-40 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            />
+          </label>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex flex-col gap-1 text-sm text-gray-600">
+              Clock In
+              <TimeInput v-model="formClockIn" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
+            </label>
+            <label class="flex flex-col gap-1 text-sm text-gray-600">
+              Clock Out
+              <TimeInput v-model="formClockOut" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
+            </label>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-sm text-gray-600">Breaks <span class="text-gray-400 text-xs">(optional)</span></p>
+            <div v-for="(b, i) in formBreaks" :key="i" class="flex items-center gap-2">
+              <TimeInput v-model="b.start" input-class="w-28 rounded border px-2 py-1 text-sm" />
+              <span class="text-xs text-gray-400">to</span>
+              <TimeInput v-model="b.end" input-class="w-28 rounded border px-2 py-1 text-sm" />
+              <button @click="removeBreak(i)" aria-label="Remove break"
+                class="text-xs text-red-400 hover:text-red-600">✕</button>
+            </div>
+            <button @click="addBreak" class="text-xs text-blue-600 hover:underline">+ Add break</button>
+          </div>
+
+          <label class="flex flex-col gap-1 text-sm text-gray-600">
+            Reason <span class="text-red-500">*</span>
+            <textarea
+              v-model="formNote"
+              rows="2"
+              maxlength="1000"
+              placeholder="Explain why this entry was missed"
+              class="resize-none rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            />
+          </label>
+
+          <div v-if="formError" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {{ formError }}
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+          <button
+            @click="closeModal"
+            class="rounded border border-gray-200 px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            @click="submitForm"
+            :disabled="submitting"
+            class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ submitting ? 'Submitting…' : 'Submit' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>

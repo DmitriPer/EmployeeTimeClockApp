@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ErrorCode, UserRole } from '@app/shared';
-import { getPendingOvertimeRequests, reviewOvertimeRequest, getFlaggedSessions } from '../manager.service.js';
+import { getPendingOvertimeRequests, reviewOvertimeRequest, getFlaggedSessions, reviewFlaggedSession } from '../manager.service.js';
 
 vi.mock('../manager.repository.js', () => ({
   findPendingOvertimeRequests: vi.fn(),
   findOvertimeRequestById: vi.fn(),
   updateOvertimeRequest: vi.fn(),
   findFlaggedSessions: vi.fn(),
+  findFlaggedEntryWithBreak: vi.fn(),
+  updateFlaggedSessionReview: vi.fn(),
 }));
 
 vi.mock('../../users/users.repository.js', () => ({
@@ -208,5 +210,93 @@ describe('getFlaggedSessions', () => {
     const result = await getFlaggedSessions(5, UserRole.ADMIN);
 
     expect(result).toEqual({ sessions: [], total: 0 });
+  });
+});
+
+// break_start_at = 13:00 Jerusalem = 10:00 UTC
+// clock_out_at   = 17:00 Jerusalem = 14:00 UTC
+const flaggedEntry = {
+  id: 42,
+  user_id: 10,
+  clock_in_at: new Date('2024-06-01T06:00:00.000Z'),
+  clock_out_at: new Date('2024-06-01T14:00:00.000Z'),
+  is_flagged: 1,
+  manager_id: 3,
+  break_id: 7,
+  break_start_at: new Date('2024-06-01T10:00:00.000Z'),
+  break_end_at: null,
+};
+
+describe('reviewFlaggedSession', () => {
+  it('throws NOT_FOUND when entry does not exist', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue(undefined);
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '14:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.NOT_FOUND });
+  });
+
+  it('throws VALIDATION_ERROR when entry is not flagged', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue({ ...flaggedEntry, is_flagged: 0 });
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '14:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('throws FORBIDDEN when MANAGER reviews entry from an employee not assigned to them', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue({ ...flaggedEntry, manager_id: 99 });
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '14:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.FORBIDDEN, statusCode: 403 });
+  });
+
+  it('throws NOT_FOUND when entry has no break', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue({ ...flaggedEntry, break_start_at: null });
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '14:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.NOT_FOUND });
+  });
+
+  it('throws VALIDATION_ERROR when break end is before break start (12:00 Jerusalem = 09:00 UTC)', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue(flaggedEntry);
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '12:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('throws VALIDATION_ERROR when break end is after clock-out (18:00 Jerusalem = 15:00 UTC, clock-out 14:00 UTC)', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue(flaggedEntry);
+
+    await expect(
+      reviewFlaggedSession(3, UserRole.MANAGER, 42, '18:00'),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('calls updateFlaggedSessionReview with correct params on success', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue(flaggedEntry);
+    vi.mocked(repo.updateFlaggedSessionReview).mockResolvedValue(undefined);
+
+    await reviewFlaggedSession(3, UserRole.MANAGER, 42, '14:00');
+
+    expect(repo.updateFlaggedSessionReview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeEntryId: 42,
+        actorId: 3,
+        targetUserId: 10,
+      }),
+    );
+  });
+
+  it('allows ADMIN to review entry regardless of manager_id', async () => {
+    vi.mocked(repo.findFlaggedEntryWithBreak).mockResolvedValue({ ...flaggedEntry, manager_id: 99 });
+    vi.mocked(repo.updateFlaggedSessionReview).mockResolvedValue(undefined);
+
+    await expect(
+      reviewFlaggedSession(5, UserRole.ADMIN, 42, '14:00'),
+    ).resolves.toBeUndefined();
   });
 });
