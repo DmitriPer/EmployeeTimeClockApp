@@ -5,7 +5,7 @@ import { env } from '../config/env.js';
 import { AppError } from '../lib/errors.js';
 import * as authRepo from './auth.repository.js';
 
-const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const REFRESH_TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
 
 export async function login(employeeId: string, password: string) {
   const user = await authRepo.findUserByEmployeeId(employeeId);

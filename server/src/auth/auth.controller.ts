@@ -4,7 +4,7 @@ import { AppError } from '../lib/errors.js';
 import * as authService from './auth.service.js';
 
 const REFRESH_COOKIE = 'refreshToken';
-const REFRESH_COOKIE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const REFRESH_COOKIE_TTL_MS = 8 * 60 * 60 * 1000;
 
 export async function handleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
