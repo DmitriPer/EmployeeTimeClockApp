@@ -15,9 +15,11 @@ export interface OvertimeRecord {
 
 export interface PendingCorrectionRecord {
   id: number;
+  status: 'PENDING' | 'REJECTED';
   requestedClockInAt: string;
   requestedClockOutAt: string | null;
   employeeNote: string;
+  managerNote: string | null;
 }
 
 export interface HistoryEntry {
