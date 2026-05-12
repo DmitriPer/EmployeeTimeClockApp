@@ -7,6 +7,7 @@ import * as m004 from './migrations/004_create_break_events.js';
 import * as m005 from './migrations/005_create_overtime_requests.js';
 import * as m006 from './migrations/006_create_audit_log.js';
 import * as m007 from './migrations/007_add_manager_id_to_users.js';
+import * as m008 from './migrations/008_create_correction_requests.js';
 
 async function migrateToLatest(): Promise<void> {
   const migrator = new Migrator({
@@ -21,6 +22,7 @@ async function migrateToLatest(): Promise<void> {
           '005_create_overtime_requests': m005,
           '006_create_audit_log': m006,
           '007_add_manager_id_to_users': m007,
+          '008_create_correction_requests': m008,
         });
       },
     },

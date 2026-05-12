@@ -62,6 +62,22 @@ export interface AuditLogTable {
   created_at: Generated<Date>;
 }
 
+export interface CorrectionRequestsTable {
+  id: Generated<number>;
+  time_entry_id: number;
+  user_id: number;
+  requested_clock_in_at: Date;
+  requested_clock_out_at: Date | null;
+  requested_breaks_json: string | null;
+  employee_note: string;
+  status: Generated<'PENDING' | 'APPROVED' | 'REJECTED'>;
+  reviewed_by: number | null;
+  reviewed_at: Date | null;
+  manager_note: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -69,4 +85,5 @@ export interface Database {
   break_events: BreakEventsTable;
   overtime_requests: OvertimeRequestsTable;
   audit_log: AuditLogTable;
+  correction_requests: CorrectionRequestsTable;
 }
