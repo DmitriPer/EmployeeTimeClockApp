@@ -8,6 +8,8 @@ import * as m005 from './migrations/005_create_overtime_requests.js';
 import * as m006 from './migrations/006_create_audit_log.js';
 import * as m007 from './migrations/007_add_manager_id_to_users.js';
 import * as m008 from './migrations/008_create_correction_requests.js';
+import * as m009 from './migrations/009_create_retroactive_entry_requests.js';
+import * as m010 from './migrations/010_add_is_retroactive_to_time_entries.js';
 
 async function migrateToLatest(): Promise<void> {
   const migrator = new Migrator({
@@ -23,6 +25,8 @@ async function migrateToLatest(): Promise<void> {
           '006_create_audit_log': m006,
           '007_add_manager_id_to_users': m007,
           '008_create_correction_requests': m008,
+          '009_create_retroactive_entry_requests': m009,
+          '010_add_is_retroactive_to_time_entries': m010,
         });
       },
     },

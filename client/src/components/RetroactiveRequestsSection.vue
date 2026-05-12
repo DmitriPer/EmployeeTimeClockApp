@@ -1,0 +1,231 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { DateTime } from 'luxon';
+import type { BreakInput } from '../api/correctionRequests.js';
+import {
+  getMyRetroactiveRequests,
+  submitRetroactiveRequest,
+  cancelRetroactiveRequest,
+  type RetroactiveRequestResult,
+} from '../api/retroactiveRequests.js';
+
+const TZ = 'Asia/Jerusalem';
+
+const requests = ref<RetroactiveRequestResult[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+const showForm = ref(false);
+const formDate = ref('');
+const formClockIn = ref('');
+const formClockOut = ref('');
+const formBreaks = ref<BreakInput[]>([]);
+const formNote = ref('');
+const submitting = ref(false);
+const formError = ref<string | null>(null);
+
+const hasPending = computed(() => requests.value.some((r) => r.status === 'PENDING'));
+
+const today = computed(() => DateTime.now().setZone(TZ).toISODate()!);
+const monthMin = computed(() => DateTime.now().setZone(TZ).startOf('month').toISODate()!);
+
+onMounted(async () => {
+  loading.value = true;
+  try {
+    requests.value = await getMyRetroactiveRequests();
+  } catch {
+    error.value = 'Failed to load requests.';
+  } finally {
+    loading.value = false;
+  }
+});
+
+function openForm(): void {
+  formDate.value = today.value;
+  formClockIn.value = '';
+  formClockOut.value = '';
+  formBreaks.value = [];
+  formNote.value = '';
+  formError.value = null;
+  showForm.value = true;
+}
+
+function addBreak(): void {
+  formBreaks.value.push({ start: '', end: '' });
+}
+
+function removeBreak(idx: number): void {
+  formBreaks.value.splice(idx, 1);
+}
+
+async function submitForm(): Promise<void> {
+  if (!formNote.value.trim()) {
+    formError.value = 'An explanation is required.';
+    return;
+  }
+  submitting.value = true;
+  formError.value = null;
+  try {
+    const result = await submitRetroactiveRequest({
+      date: formDate.value,
+      clockInTime: formClockIn.value,
+      clockOutTime: formClockOut.value,
+      breaks: formBreaks.value.length ? formBreaks.value : undefined,
+      employeeNote: formNote.value,
+    });
+    requests.value = [result, ...requests.value];
+    showForm.value = false;
+  } catch (e: any) {
+    formError.value = e?.response?.data?.error?.message ?? 'Failed to submit request.';
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function handleCancel(id: number): Promise<void> {
+  error.value = null;
+  try {
+    await cancelRetroactiveRequest(id);
+    requests.value = requests.value.filter((r) => r.id !== id);
+  } catch {
+    error.value = 'Failed to cancel request.';
+  }
+}
+
+function statusClass(status: string): string {
+  if (status === 'APPROVED') return 'bg-green-100 text-green-700';
+  if (status === 'REJECTED') return 'bg-red-100 text-red-700';
+  return 'bg-yellow-100 text-yellow-700';
+}
+</script>
+
+<template>
+  <div class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-700">Retroactive Entry Requests</h2>
+      <button
+        v-if="!showForm && !hasPending"
+        @click="openForm"
+        class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+      >
+        Request Missing Entry
+      </button>
+    </div>
+
+    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+      {{ error }}
+    </div>
+
+    <!-- Inline form -->
+    <div v-if="showForm" class="rounded border border-blue-200 bg-blue-50 p-4 space-y-3">
+      <p class="text-sm font-medium text-gray-700">New Retroactive Entry</p>
+
+      <label class="flex flex-col gap-1 text-sm text-gray-600">
+        Date
+        <input
+          v-model="formDate"
+          type="date"
+          :min="monthMin"
+          :max="today"
+          required
+          class="w-40 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
+        />
+      </label>
+
+      <div class="grid grid-cols-2 gap-4">
+        <label class="flex flex-col gap-1 text-sm text-gray-600">
+          Clock In
+          <input v-model="formClockIn" type="time" required
+            class="rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-600">
+          Clock Out
+          <input v-model="formClockOut" type="time" required
+            class="rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
+        </label>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-sm text-gray-600">Breaks <span class="text-gray-400 text-xs">(optional)</span></p>
+        <div v-for="(b, i) in formBreaks" :key="i" class="flex items-center gap-2">
+          <input v-model="b.start" type="time"
+            class="w-28 rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
+          <span class="text-xs text-gray-400">to</span>
+          <input v-model="b.end" type="time"
+            class="w-28 rounded border border-gray-300 bg-white px-2 py-1 text-sm" />
+          <button @click="removeBreak(i)" aria-label="Remove break"
+            class="text-xs text-red-400 hover:text-red-600">✕</button>
+        </div>
+        <button @click="addBreak" class="text-xs text-blue-600 hover:underline">+ Add break</button>
+      </div>
+
+      <label class="flex flex-col gap-1 text-sm text-gray-600">
+        Reason <span class="text-red-500">*</span>
+        <textarea
+          v-model="formNote"
+          rows="2"
+          maxlength="1000"
+          placeholder="Explain why this entry was missed"
+          class="resize-none rounded border border-gray-300 bg-white px-2 py-1 text-sm"
+        />
+      </label>
+
+      <div v-if="formError" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+        {{ formError }}
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          @click="submitForm"
+          :disabled="submitting"
+          class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {{ submitting ? 'Submitting…' : 'Submit' }}
+        </button>
+        <button
+          @click="showForm = false"
+          class="rounded border border-gray-300 px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
+
+    <div v-else-if="requests.length === 0 && !showForm" class="text-sm text-gray-400">
+      No retroactive requests.
+    </div>
+
+    <div v-else-if="requests.length > 0" class="space-y-2">
+      <div
+        v-for="req in requests"
+        :key="req.id"
+        class="rounded border border-gray-200 bg-white p-3 text-sm space-y-1"
+      >
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-gray-700">{{ req.date }}</span>
+          <span class="rounded-full px-2 py-0.5 text-xs" :class="statusClass(req.status)">
+            {{ req.status.charAt(0) + req.status.slice(1).toLowerCase() }}
+          </span>
+        </div>
+        <p class="text-xs text-gray-500">{{ req.clockInTime }} — {{ req.clockOutTime }}</p>
+        <p
+          v-if="req.breaks && req.breaks.length"
+          class="text-xs text-gray-400"
+        >
+          Breaks: {{ req.breaks.map((b) => `${b.start}–${b.end}`).join(', ') }}
+        </p>
+        <p class="text-xs italic text-gray-500">"{{ req.employeeNote }}"</p>
+        <p v-if="req.managerNote" class="text-xs text-gray-400">Manager: "{{ req.managerNote }}"</p>
+        <button
+          v-if="req.status === 'PENDING'"
+          @click="handleCancel(req.id)"
+          class="text-xs text-red-500 hover:text-red-700 hover:underline"
+        >
+          Cancel request
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

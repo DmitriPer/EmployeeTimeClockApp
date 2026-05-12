@@ -71,3 +71,30 @@ export async function reviewCorrectionRequest(
 ): Promise<void> {
   await api.patch(`/manager/correction-requests/${id}/review`, { action, note });
 }
+
+export interface PendingRetroactiveRequest {
+  id: number;
+  employeeName: string;
+  employeeId: string;
+  date: string;
+  clockInTime: string;
+  clockOutTime: string;
+  breaks: Array<{ start: string; end: string }> | null;
+  employeeNote: string;
+  createdAt: string;
+}
+
+export async function fetchRetroactiveQueue(): Promise<PendingRetroactiveRequest[]> {
+  const { data } = await api.get<{ success: true; data: PendingRetroactiveRequest[] }>(
+    '/manager/retroactive-requests',
+  );
+  return data.data;
+}
+
+export async function reviewRetroactiveRequest(
+  id: number,
+  action: 'APPROVED' | 'REJECTED',
+  note: string | null,
+): Promise<void> {
+  await api.patch(`/manager/retroactive-requests/${id}/review`, { action, note });
+}

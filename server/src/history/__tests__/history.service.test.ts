@@ -28,6 +28,7 @@ const entry = {
   clock_out_at: clockOut,
   is_auto_closed_break: 0,
   is_flagged: 0,
+  is_retroactive: 0,
   employee_note: null,
   created_at: clockIn,
 };

@@ -5,6 +5,7 @@ import { downloadExport, type ExportFormat } from '../api/export.js';
 import { getCorrectionRequestForEntry, type CorrectionRequestResult } from '../api/correctionRequests.js';
 import EntryEditModal from '../components/EntryEditModal.vue';
 import BreakPopover from '../components/BreakPopover.vue';
+import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
 
 const TZ = 'Asia/Jerusalem';
 
@@ -221,6 +222,7 @@ function handleModalDeleted(): void {
               </td>
               <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
               <td class="px-4 py-2">
+                <span v-if="entry.isRetroactive" class="mr-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">Retroactive</span>
                 <span v-if="entry.isCorrected" class="mr-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">Corrected</span>
                 <span v-if="entry.isFlagged" class="mr-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Flagged</span>
                 <span v-if="entry.overtimeRequest" class="inline-block rounded-full px-2 py-0.5 text-xs"
@@ -280,6 +282,10 @@ function handleModalDeleted(): void {
         </tbody>
       </table>
     </div>
+
+    <!-- Retroactive entry requests -->
+    <hr class="border-gray-200" />
+    <RetroactiveRequestsSection />
 
     <!-- Edit modal -->
     <EntryEditModal

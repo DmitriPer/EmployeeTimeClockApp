@@ -39,6 +39,7 @@ export interface HistoryEntry {
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
   isCorrected: boolean;
+  isRetroactive: boolean;
   employeeNote: string | null;
   breaks: BreakRecord[];
   overtimeRequest: OvertimeRecord | null;
@@ -115,6 +116,7 @@ export async function getHistory(params: {
       isAutoClosedBreak: entry.is_auto_closed_break === 1,
       isFlagged: entry.is_flagged === 1,
       isCorrected,
+      isRetroactive: entry.is_retroactive === 1,
       employeeNote: entry.employee_note,
       breaks: breaks.map((b) => ({
         id: b.id,

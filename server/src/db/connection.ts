@@ -11,6 +11,7 @@ const dialect = new MysqlDialect({
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     connectionLimit: 20,
+    dateStrings: ['DATE'],
   }),
 });
 
