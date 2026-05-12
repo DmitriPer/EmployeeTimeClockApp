@@ -47,6 +47,17 @@ export async function findEntryById(id: number) {
     .executeTakeFirst();
 }
 
+export async function findCorrectedEntryIds(entryIds: number[]): Promise<number[]> {
+  if (entryIds.length === 0) return [];
+  const rows = await db
+    .selectFrom('audit_log')
+    .select('time_entry_id')
+    .where('time_entry_id', 'in', entryIds)
+    .where('field_name', '=', 'entry_edit')
+    .execute();
+  return rows.map((r) => r.time_entry_id);
+}
+
 export async function updateEntryNote(id: number, note: string | null): Promise<void> {
   await db
     .updateTable('time_entries')

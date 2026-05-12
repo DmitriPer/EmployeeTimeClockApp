@@ -3,6 +3,7 @@ import { ErrorCode, UserRole } from '@app/shared';
 import { AppError } from '../lib/errors.js';
 import { calcPaidHours } from '../utils/timeCalculations.js';
 import * as repo from './history.repository.js';
+import { findCorrectionRequestsByEntryIds } from '../correction-requests/correction-requests.repository.js';
 
 const TZ = 'Asia/Jerusalem';
 const BREAK_ALLOWANCE_MINUTES = 60;
@@ -20,6 +21,13 @@ export interface OvertimeRecord {
   overtimeMinutes: number;
 }
 
+export interface PendingCorrectionRecord {
+  id: number;
+  requestedClockInAt: string;
+  requestedClockOutAt: string | null;
+  employeeNote: string;
+}
+
 export interface HistoryEntry {
   id: number;
   clockInAt: string;
@@ -30,9 +38,11 @@ export interface HistoryEntry {
   paidMinutes: number | null;
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
+  isCorrected: boolean;
   employeeNote: string | null;
   breaks: BreakRecord[];
   overtimeRequest: OvertimeRecord | null;
+  pendingCorrection: PendingCorrectionRecord | null;
 }
 
 function parseRangeDate(dateStr: string, boundary: 'start' | 'end'): Date {
@@ -69,14 +79,20 @@ export async function getHistory(params: {
   if (entries.length === 0) return [];
 
   const entryIds = entries.map((e) => e.id);
-  const [allBreaks, allOvertimes] = await Promise.all([
+  const [allBreaks, allOvertimes, allCorrections, correctedIds] = await Promise.all([
     repo.findBreaksByEntryIds(entryIds),
     repo.findOvertimeByEntryIds(entryIds),
+    findCorrectionRequestsByEntryIds(entryIds),
+    repo.findCorrectedEntryIds(entryIds),
   ]);
 
   return entries.map((entry) => {
     const breaks = allBreaks.filter((b) => b.time_entry_id === entry.id);
     const overtime = allOvertimes.find((o) => o.time_entry_id === entry.id) ?? null;
+    const pendingCr = allCorrections.find(
+      (c) => c.time_entry_id === entry.id && c.status === 'PENDING',
+    ) ?? null;
+    const isCorrected = correctedIds.includes(entry.id);
 
     const totalBreakMinutes = sumBreakMinutes(breaks);
     const excessBreakMinutes = Math.max(0, totalBreakMinutes - BREAK_ALLOWANCE_MINUTES);
@@ -98,6 +114,7 @@ export async function getHistory(params: {
       paidMinutes,
       isAutoClosedBreak: entry.is_auto_closed_break === 1,
       isFlagged: entry.is_flagged === 1,
+      isCorrected,
       employeeNote: entry.employee_note,
       breaks: breaks.map((b) => ({
         id: b.id,
@@ -109,6 +126,14 @@ export async function getHistory(params: {
       })),
       overtimeRequest: overtime
         ? { id: overtime.id, status: overtime.status, overtimeMinutes: overtime.overtime_minutes }
+        : null,
+      pendingCorrection: pendingCr
+        ? {
+            id: pendingCr.id,
+            requestedClockInAt: pendingCr.requested_clock_in_at.toISOString(),
+            requestedClockOutAt: pendingCr.requested_clock_out_at?.toISOString() ?? null,
+            employeeNote: pendingCr.employee_note,
+          }
         : null,
     };
   });

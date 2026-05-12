@@ -16,6 +16,7 @@ const HEADERS = [
   'Total Work Time',
   'Total Break Time',
   'Net Work Time',
+  'Breaks',
   'Status',
   'Notes',
 ];
@@ -38,12 +39,20 @@ function formatMinutes(m: number | null): string {
 
 function buildStatus(e: HistoryEntry): string {
   const parts: string[] = [];
+  if (e.isCorrected) parts.push('Corrected');
   if (e.isFlagged) parts.push('Flagged');
   if (e.overtimeRequest) {
     const s = e.overtimeRequest.status;
     parts.push(`OT ${s.charAt(0) + s.slice(1).toLowerCase()}`);
   }
   return parts.length > 0 ? parts.join(' · ') : 'Normal';
+}
+
+function buildBreaksSummary(e: HistoryEntry): string {
+  return e.breaks
+    .filter((b) => b.breakEndAt !== null)
+    .map((b) => `${formatTime(b.breakStartAt)}-${formatTime(b.breakEndAt!)}`)
+    .join(', ');
 }
 
 function buildRows(entries: HistoryEntry[]): string[][] {
@@ -54,6 +63,7 @@ function buildRows(entries: HistoryEntry[]): string[][] {
     formatMinutes(e.grossMinutes),
     formatMinutes(e.totalBreakMinutes),
     formatMinutes(e.paidMinutes),
+    buildBreaksSummary(e),
     buildStatus(e),
     e.employeeNote ?? '',
   ]);
@@ -93,7 +103,7 @@ async function generatePdf(
     const pageH = doc.page.height;
     const usableW = pageW - MARGIN * 2;
     const footerY = pageH - 28;
-    const colWidths = [75, 65, 65, 80, 80, 80, 100, 216];
+    const colWidths = [70, 60, 60, 72, 72, 72, 110, 90, 155];
     const ROW_H = 20;
     const HEADER_BLOCK_H = 56;
     const periodText = from && to ? `${from} — ${to}` : 'All records';
