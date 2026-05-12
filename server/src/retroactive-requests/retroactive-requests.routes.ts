@@ -23,6 +23,7 @@ retroactiveRequestsRouter.post(
         clockOutTime,
         breaks,
         employeeNote,
+        requesterRole: req.user!.role,
       });
       res.status(201).json({ success: true, data: result });
     } catch (err) {

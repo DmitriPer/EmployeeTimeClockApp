@@ -6,6 +6,7 @@ import { getCorrectionRequestForEntry, type CorrectionRequestResult } from '../a
 import EntryEditModal from '../components/EntryEditModal.vue';
 import BreakPopover from '../components/BreakPopover.vue';
 import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
+import { isCurrentMonthEntry } from '../utils/periodLock.js';
 
 const TZ = 'Asia/Jerusalem';
 
@@ -52,11 +53,6 @@ function nextMonth(): void {
   loadHistory();
 }
 
-function isCurrentMonthEntry(iso: string): boolean {
-  const fmt = (d: Date) =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).format(d);
-  return fmt(new Date(iso)) === fmt(new Date());
-}
 
 onMounted(() => loadHistory());
 
