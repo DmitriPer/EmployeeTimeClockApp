@@ -90,9 +90,10 @@ export async function getHistory(params: {
   return entries.map((entry) => {
     const breaks = allBreaks.filter((b) => b.time_entry_id === entry.id);
     const overtime = allOvertimes.find((o) => o.time_entry_id === entry.id) ?? null;
-    const pendingCr = allCorrections.find(
-      (c) => c.time_entry_id === entry.id && c.status === 'PENDING',
-    ) ?? null;
+    const entryCorrOptions = allCorrections.filter((c) => c.time_entry_id === entry.id);
+    const pendingCr = entryCorrOptions.find((c) => c.status === 'PENDING')
+      ?? entryCorrOptions.sort((a, b) => b.id - a.id)[0]
+      ?? null;
     const isCorrected = correctedIds.includes(entry.id);
 
     const totalBreakMinutes = sumBreakMinutes(breaks);
@@ -133,9 +134,11 @@ export async function getHistory(params: {
       pendingCorrection: pendingCr
         ? {
             id: pendingCr.id,
+            status: pendingCr.status as 'PENDING' | 'REJECTED',
             requestedClockInAt: pendingCr.requested_clock_in_at.toISOString(),
             requestedClockOutAt: pendingCr.requested_clock_out_at?.toISOString() ?? null,
             employeeNote: pendingCr.employee_note,
+            managerNote: pendingCr.manager_note ?? null,
           }
         : null,
     };

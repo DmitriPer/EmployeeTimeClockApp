@@ -131,9 +131,11 @@ function handleModalSubmitted(result: CorrectionRequestResult): void {
   if (entry) {
     entry.pendingCorrection = {
       id: result.id,
+      status: 'PENDING',
       requestedClockInAt: result.requestedClockIn,
       requestedClockOutAt: result.requestedClockOut,
       employeeNote: result.employeeNote,
+      managerNote: null,
     };
   }
   modalEntry.value = null;
@@ -258,21 +260,31 @@ function handleModalDeleted(): void {
                   v-if="entry.clockOutAt && isCurrentMonthEntry(entry.clockInAt)"
                   @click="openEditModal(entry)"
                   class="text-xs"
-                  :class="entry.pendingCorrection
+                  :class="entry.pendingCorrection?.status === 'PENDING'
                     ? 'text-amber-600 hover:text-amber-800'
                     : 'text-blue-600 hover:text-blue-800'"
                 >
-                  {{ entry.pendingCorrection ? 'Pending Edit' : 'Request Edit' }}
+                  {{ entry.pendingCorrection?.status === 'PENDING' ? 'Pending Edit' : 'Request Edit' }}
                 </button>
               </td>
             </tr>
             <!-- Pending correction note -->
-            <tr v-if="entry.pendingCorrection" :key="`cr-${entry.id}`" class="bg-amber-50">
+            <tr v-if="entry.pendingCorrection?.status === 'PENDING'" :key="`cr-${entry.id}`" class="bg-amber-50">
               <td colspan="9" class="px-4 py-1.5 text-xs text-amber-700">
                 Edit requested:
                 {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
                 {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
                 &mdash; "{{ entry.pendingCorrection.employeeNote }}"
+              </td>
+            </tr>
+            <!-- Rejected correction note -->
+            <tr v-if="entry.pendingCorrection?.status === 'REJECTED'" :key="`cr-rej-${entry.id}`" class="bg-red-50">
+              <td colspan="9" class="px-4 py-1.5 text-xs text-red-700">
+                Edit rejected:
+                {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
+                {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
+                &mdash; "{{ entry.pendingCorrection.employeeNote }}"
+                <span v-if="entry.pendingCorrection.managerNote"> &mdash; Manager: "{{ entry.pendingCorrection.managerNote }}"</span>
               </td>
             </tr>
           </template>
