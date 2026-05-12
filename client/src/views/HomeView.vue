@@ -4,19 +4,23 @@ import { ClockStatus } from '@app/shared';
 import { useTimeclockStore } from '../stores/timeclock.js';
 import * as timeclockApi from '../api/timeclock.js';
 import type { ClockOutData } from '../api/timeclock.js';
+import { fetchOwnProfile } from '../api/users.js';
+import type { OwnProfile } from '../api/users.js';
 
 const store = useTimeclockStore();
 const loading = ref(false);
 const error = ref<string | null>(null);
 const clockOutSummary = ref<ClockOutData | null>(null);
 const now = ref(new Date());
+const profile = ref<OwnProfile | null>(null);
 
 let ticker: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
   try {
-    const data = await timeclockApi.fetchStatus();
-    store.applyStatus(data);
+    const [status, own] = await Promise.all([timeclockApi.fetchStatus(), fetchOwnProfile()]);
+    store.applyStatus(status);
+    profile.value = own;
   } catch {
     error.value = 'Failed to load clock status.';
   }
@@ -150,6 +154,11 @@ async function handleBreakEnd(): Promise<void> {
 
     <!-- Main clock card -->
     <div v-if="!clockOutSummary" class="rounded border border-gray-200 bg-white p-8 shadow-sm space-y-6">
+
+      <!-- Manager info -->
+      <div v-if="profile?.managerName" class="text-center text-xs text-gray-400">
+        Manager: <span class="text-gray-600">{{ profile.managerName }}</span>
+      </div>
 
       <!-- Status + elapsed -->
       <div class="text-center space-y-2">

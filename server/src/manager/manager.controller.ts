@@ -10,12 +10,12 @@ const ReviewSchema = z.object({
 });
 
 export async function handleGetOvertimeQueue(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const data = await service.getPendingOvertimeRequests();
+    const data = await service.getPendingOvertimeRequests(req.user!.id, req.user!.role);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -41,6 +41,7 @@ export async function handleReviewOvertime(
     await service.reviewOvertimeRequest({
       requestId,
       reviewerId: req.user!.id,
+      reviewerRole: req.user!.role,
       action: parsed.data.action,
       note: parsed.data.note ?? null,
     });
@@ -65,7 +66,7 @@ export async function handleGetFlaggedSessions(
     if (!parsed.success) {
       throw new AppError('Invalid query parameters.', 400, ErrorCode.VALIDATION_ERROR);
     }
-    const data = await service.getFlaggedSessions(parsed.data.employeeId);
+    const data = await service.getFlaggedSessions(req.user!.id, req.user!.role, parsed.data.employeeId);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

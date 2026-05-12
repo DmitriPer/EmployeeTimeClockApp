@@ -10,6 +10,7 @@ vi.mock('../users.repository.js', () => ({
   updateUser: vi.fn(),
   deactivateUser: vi.fn(),
   deleteUserRefreshTokens: vi.fn(),
+  countActiveReportsByManagerId: vi.fn(),
 }));
 
 vi.mock('bcryptjs', () => ({
@@ -26,14 +27,22 @@ const activeUser = {
   password_hash: 'hash',
   role: UserRole.EMPLOYEE,
   is_active: 1,
+  manager_id: null,
   created_at: new Date(),
   updated_at: new Date(),
+};
+
+const managerUser = {
+  ...activeUser,
+  id: 5,
+  employee_id: 'MGR001',
+  role: UserRole.MANAGER,
 };
 
 beforeEach(() => vi.clearAllMocks());
 
 describe('listUsers', () => {
-  it('returns { users, total } with mapped isActive boolean', async () => {
+  it('returns { users, total } with mapped isActive boolean and managerId', async () => {
     vi.mocked(repo.findAllUsers).mockResolvedValue([activeUser]);
 
     const result = await listUsers();
@@ -44,6 +53,7 @@ describe('listUsers', () => {
       employeeId: 'EMP001',
       isActive: true,
       role: UserRole.EMPLOYEE,
+      managerId: null,
     });
   });
 });
@@ -57,7 +67,7 @@ describe('createUser', () => {
     ).rejects.toMatchObject({ code: ErrorCode.EMPLOYEE_ID_TAKEN });
   });
 
-  it('creates user and returns summary including email', async () => {
+  it('creates user and returns summary including managerId', async () => {
     vi.mocked(repo.findUserByEmployeeId).mockResolvedValue(undefined);
     vi.mocked(repo.insertUser).mockResolvedValue(42);
 
@@ -69,10 +79,42 @@ describe('createUser', () => {
       role: UserRole.EMPLOYEE,
     });
 
-    expect(result).toMatchObject({ id: 42, employeeId: 'NEW001', email: 'new@co.com', role: UserRole.EMPLOYEE });
+    expect(result).toMatchObject({ id: 42, employeeId: 'NEW001', email: 'new@co.com', role: UserRole.EMPLOYEE, managerId: null });
     expect(repo.insertUser).toHaveBeenCalledWith(
       expect.objectContaining({ passwordHash: 'hashed_password' }),
     );
+  });
+
+  it('throws NOT_FOUND when managerId points to non-existent user', async () => {
+    vi.mocked(repo.findUserByEmployeeId).mockResolvedValue(undefined);
+    vi.mocked(repo.findUserById).mockResolvedValue(undefined);
+
+    await expect(
+      createUser({ employeeId: 'NEW001', name: 'New', email: 'new@co.com', password: 'Pass1234!', role: UserRole.EMPLOYEE, managerId: 999 }),
+    ).rejects.toMatchObject({ code: ErrorCode.NOT_FOUND });
+  });
+
+  it('throws VALIDATION_ERROR when managerId points to an EMPLOYEE', async () => {
+    vi.mocked(repo.findUserByEmployeeId).mockResolvedValue(undefined);
+    vi.mocked(repo.findUserById).mockResolvedValue(activeUser);
+
+    await expect(
+      createUser({ employeeId: 'NEW001', name: 'New', email: 'new@co.com', password: 'Pass1234!', role: UserRole.EMPLOYEE, managerId: 10 }),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('creates user with valid managerId', async () => {
+    vi.mocked(repo.findUserByEmployeeId).mockResolvedValue(undefined);
+    vi.mocked(repo.findUserById).mockResolvedValue(managerUser);
+    vi.mocked(repo.insertUser).mockResolvedValue(42);
+
+    const result = await createUser({
+      employeeId: 'NEW001', name: 'New', email: 'new@co.com', password: 'Pass1234!',
+      role: UserRole.EMPLOYEE, managerId: 5,
+    });
+
+    expect(result.managerId).toBe(5);
+    expect(repo.insertUser).toHaveBeenCalledWith(expect.objectContaining({ managerId: 5 }));
   });
 });
 
@@ -100,6 +142,16 @@ describe('updateUser', () => {
       isActive: true,
     });
   });
+
+  it('updates managerId to null (unassign)', async () => {
+    vi.mocked(repo.findUserById).mockResolvedValue({ ...activeUser, manager_id: 5 });
+    vi.mocked(repo.updateUser).mockResolvedValue(undefined);
+
+    const result = await updateUser(10, { managerId: null });
+
+    expect(repo.updateUser).toHaveBeenCalledWith(10, { manager_id: null });
+    expect(result.managerId).toBeNull();
+  });
 });
 
 describe('deactivateUser', () => {
@@ -116,8 +168,19 @@ describe('deactivateUser', () => {
     await expect(deactivateUser(1, 99)).rejects.toMatchObject({ code: ErrorCode.NOT_FOUND });
   });
 
+  it('throws MANAGER_HAS_ACTIVE_REPORTS when manager still has active employees', async () => {
+    vi.mocked(repo.findUserById).mockResolvedValue(activeUser);
+    vi.mocked(repo.countActiveReportsByManagerId).mockResolvedValue(3);
+
+    await expect(deactivateUser(1, 10)).rejects.toMatchObject({
+      code: ErrorCode.MANAGER_HAS_ACTIVE_REPORTS,
+      statusCode: 409,
+    });
+  });
+
   it('throws USER_ALREADY_INACTIVE when already deactivated', async () => {
     vi.mocked(repo.findUserById).mockResolvedValue({ ...activeUser, is_active: 0 });
+    vi.mocked(repo.countActiveReportsByManagerId).mockResolvedValue(0);
 
     await expect(deactivateUser(1, 10)).rejects.toMatchObject({
       code: ErrorCode.USER_ALREADY_INACTIVE,
@@ -126,6 +189,7 @@ describe('deactivateUser', () => {
 
   it('deactivates user, invalidates refresh tokens, returns { id, isActive: false }', async () => {
     vi.mocked(repo.findUserById).mockResolvedValue(activeUser);
+    vi.mocked(repo.countActiveReportsByManagerId).mockResolvedValue(0);
     vi.mocked(repo.deactivateUser).mockResolvedValue(undefined);
     vi.mocked(repo.deleteUserRefreshTokens).mockResolvedValue(undefined);
 

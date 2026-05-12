@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { UserRole } from '@app/shared';
 import { useAuthStore } from '../../stores/auth.js';
 import PasswordInput from '../../components/PasswordInput.vue';
@@ -32,9 +32,14 @@ const form = ref<CreateUserPayload>({
   email: '',
   password: '',
   role: UserRole.EMPLOYEE,
+  managerId: null,
 });
 
-const editForm = ref({ name: '', email: '', role: UserRole.EMPLOYEE as UserRole });
+const editForm = ref({ name: '', email: '', role: UserRole.EMPLOYEE as UserRole, managerId: null as number | null });
+
+const managers = computed(() =>
+  users.value.filter((u) => u.isActive && (u.role === UserRole.MANAGER || u.role === UserRole.ADMIN)),
+);
 const lastSuggestedId = ref('');
 
 onMounted(async () => {
@@ -66,7 +71,7 @@ function suggestNextId(role: UserRole): string {
 function startCreate(): void {
   const suggested = suggestNextId(UserRole.EMPLOYEE);
   lastSuggestedId.value = suggested;
-  form.value = { employeeId: suggested, name: '', email: '', password: '', role: UserRole.EMPLOYEE };
+  form.value = { employeeId: suggested, name: '', email: '', password: '', role: UserRole.EMPLOYEE, managerId: null };
   mode.value = 'create';
   error.value = null;
 }
@@ -83,7 +88,7 @@ watch(
 
 function startEdit(u: UserSummary): void {
   editingUser.value = u;
-  editForm.value = { name: u.name, email: u.email, role: u.role };
+  editForm.value = { name: u.name, email: u.email, role: u.role, managerId: u.managerId ?? null };
   mode.value = 'edit';
   error.value = null;
 }
@@ -145,6 +150,11 @@ async function submitReset(): Promise<void> {
 }
 
 const ROLES = [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN];
+
+function getManagerName(managerId: number | null): string {
+  if (!managerId) return '—';
+  return users.value.find((u) => u.id === managerId)?.name ?? '—';
+}
 </script>
 
 <template>
@@ -190,6 +200,13 @@ const ROLES = [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN];
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
         </label>
+        <label class="flex flex-col gap-1 text-xs text-gray-600">
+          Manager
+          <select v-model="form.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+            <option :value="null">(Unassigned)</option>
+            <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
+          </select>
+        </label>
       </div>
       <div class="flex gap-2 pt-1">
         <button @click="submitCreate" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Create</button>
@@ -213,6 +230,13 @@ const ROLES = [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN];
           Role
           <select v-model="editForm.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-gray-600">
+          Manager
+          <select v-model="editForm.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+            <option :value="null">(Unassigned)</option>
+            <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
         </label>
       </div>
@@ -251,6 +275,7 @@ const ROLES = [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN];
             <th class="px-4 py-2">Name</th>
             <th class="px-4 py-2">Email</th>
             <th class="px-4 py-2">Role</th>
+            <th class="px-4 py-2">Manager</th>
             <th class="px-4 py-2">Status</th>
             <th class="px-4 py-2">Actions</th>
           </tr>
@@ -270,6 +295,7 @@ const ROLES = [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN];
                 {{ u.role }}
               </span>
             </td>
+            <td class="px-4 py-2 text-sm text-gray-500">{{ getManagerName(u.managerId) }}</td>
             <td class="px-4 py-2">
               <span class="rounded-full px-2 py-0.5 text-xs"
                 :class="u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'">

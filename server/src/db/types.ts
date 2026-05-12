@@ -7,6 +7,7 @@ export interface UsersTable {
   email: string;
   password_hash: string;
   role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN';
+  manager_id: number | null;
   is_active: Generated<number>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;

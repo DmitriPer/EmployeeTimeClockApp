@@ -27,6 +27,18 @@ usersRouter.patch(
 );
 
 usersRouter.get(
+  '/me',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await service.getOwnProfile(req.user!.id);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+usersRouter.get(
   '/',
   requireRoles(UserRole.MANAGER, UserRole.ADMIN),
   async (_req: Request, res: Response, next: NextFunction) => {

@@ -1,6 +1,7 @@
-import { ErrorCode } from '@app/shared';
+import { ErrorCode, UserRole } from '@app/shared';
 import { AppError } from '../lib/errors.js';
 import * as repo from './manager.repository.js';
+import { findUserById } from '../users/users.repository.js';
 
 export interface OvertimeRequestRow {
   id: number;
@@ -26,8 +27,12 @@ export interface FlaggedSessionRow {
   correctionCount: number;
 }
 
-export async function getPendingOvertimeRequests(): Promise<OvertimeRequestRow[]> {
-  const rows = await repo.findPendingOvertimeRequests();
+export async function getPendingOvertimeRequests(
+  requesterId: number,
+  requesterRole: string,
+): Promise<OvertimeRequestRow[]> {
+  const managerId = requesterRole === UserRole.MANAGER ? requesterId : undefined;
+  const rows = await repo.findPendingOvertimeRequests(managerId);
   return rows.map((r) => ({
     id: r.id,
     userId: r.user_id,
@@ -46,6 +51,7 @@ export async function getPendingOvertimeRequests(): Promise<OvertimeRequestRow[]
 export async function reviewOvertimeRequest(params: {
   requestId: number;
   reviewerId: number;
+  reviewerRole: string;
   action: 'APPROVED' | 'REJECTED';
   note: string | null;
 }): Promise<void> {
@@ -58,6 +64,17 @@ export async function reviewOvertimeRequest(params: {
     throw new AppError('This request has already been reviewed.', 409, ErrorCode.OT_ALREADY_REVIEWED);
   }
 
+  if (params.reviewerRole === UserRole.MANAGER) {
+    const employee = await findUserById(request.user_id);
+    if (employee?.manager_id !== params.reviewerId) {
+      throw new AppError(
+        'This request does not belong to one of your employees.',
+        403,
+        ErrorCode.FORBIDDEN,
+      );
+    }
+  }
+
   await repo.updateOvertimeRequest({
     id: params.requestId,
     status: params.action,
@@ -66,8 +83,13 @@ export async function reviewOvertimeRequest(params: {
   });
 }
 
-export async function getFlaggedSessions(userId?: number): Promise<{ sessions: FlaggedSessionRow[]; total: number }> {
-  const rows = await repo.findFlaggedSessions(userId);
+export async function getFlaggedSessions(
+  requesterId: number,
+  requesterRole: string,
+  employeeId?: number,
+): Promise<{ sessions: FlaggedSessionRow[]; total: number }> {
+  const managerId = requesterRole === UserRole.MANAGER ? requesterId : undefined;
+  const rows = await repo.findFlaggedSessions(managerId, employeeId);
   const sessions = rows.map((r) => ({
     timeEntryId: r.id,
     employeeName: r.employee_name,
