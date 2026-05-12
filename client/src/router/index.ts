@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, RouterView } from 'vue-router';
-import { requireAuth, requireRole } from './guards.js';
+import { initAuth, requireAuth, requireRole } from './guards.js';
 import { UserRole } from '@app/shared';
 
 export const router = createRouter({
@@ -76,4 +76,9 @@ export const router = createRouter({
       redirect: '/',
     },
   ],
+});
+
+router.beforeEach(async (_to, _from, next) => {
+  await initAuth();
+  next();
 });
