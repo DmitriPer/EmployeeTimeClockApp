@@ -30,6 +30,7 @@ export interface HistoryEntry {
   paidMinutes: number | null;
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
+  isBreakReviewed: boolean;
   isCorrected: boolean;
   isRetroactive: boolean;
   employeeNote: string | null;

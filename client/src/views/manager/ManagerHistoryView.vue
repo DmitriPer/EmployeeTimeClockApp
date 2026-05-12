@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { fetchHistory, type HistoryEntry } from '../../api/history.js';
 import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
@@ -7,6 +8,8 @@ import { downloadExport, type ExportFormat } from '../../api/export.js';
 import BreakPopover from '../../components/BreakPopover.vue';
 
 const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const users = ref<UserSummary[]>([]);
 const selectedUserId = ref<number | null>(null);
 const entries = ref<HistoryEntry[]>([]);
@@ -18,14 +21,20 @@ const to = ref('');
 onMounted(async () => {
   try {
     users.value = await fetchUsers();
-    // Default to the logged-in user so managers see their own history immediately
+    const queryId = route.query.userId ? Number(route.query.userId) : null;
+    const fromQuery = queryId && users.value.some((u) => u.id === queryId) ? queryId : null;
     const self = users.value.find((u) => u.id === authStore.user?.id);
-    selectedUserId.value = self?.id ?? users.value[0]?.id ?? null;
+    selectedUserId.value = fromQuery ?? self?.id ?? users.value[0]?.id ?? null;
     if (selectedUserId.value) await loadHistory();
   } catch {
     error.value = 'Failed to load users.';
   }
 });
+
+function onUserChange(): void {
+  router.replace({ query: { ...route.query, userId: selectedUserId.value ?? undefined } });
+  loadHistory();
+}
 
 async function loadHistory(): Promise<void> {
   if (!selectedUserId.value) return;
@@ -94,7 +103,7 @@ function formatMinutes(m: number | null): string {
     <div class="flex flex-wrap items-center gap-3">
       <label class="flex items-center gap-2 text-sm text-gray-600">
         Employee
-        <select v-model="selectedUserId" class="rounded border border-gray-300 px-2 py-1 text-sm">
+        <select v-model="selectedUserId" @change="onUserChange" class="rounded border border-gray-300 px-2 py-1 text-sm">
           <option v-for="u in users" :key="u.id" :value="u.id">
             {{ u.name }} ({{ u.employeeId }})
           </option>
@@ -161,6 +170,7 @@ function formatMinutes(m: number | null): string {
             <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
             <td class="px-4 py-2">
               <span v-if="entry.isFlagged" class="mr-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Flagged</span>
+              <span v-if="entry.isBreakReviewed" class="mr-1 inline-block rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Break fixed</span>
               <span v-if="entry.overtimeRequest" class="inline-block rounded-full px-2 py-0.5 text-xs"
                 :class="{
                   'bg-yellow-100 text-yellow-700': entry.overtimeRequest.status === 'PENDING',

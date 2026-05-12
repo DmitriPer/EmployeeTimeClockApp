@@ -22,6 +22,10 @@ export interface FlaggedSession {
   clockOutAt: string | null;
   flagReason: 'AUTO_CLOSED_BREAK';
   correctionCount: number;
+  breakStartAt: string | null;
+  breakEndAt: string | null;
+  reviewedAt: string | null;
+  reviewedByName: string | null;
 }
 
 export async function fetchOvertimeQueue(): Promise<OvertimeRequest[]> {
@@ -40,6 +44,10 @@ export async function reviewOvertime(
 export async function fetchFlaggedSessions(): Promise<FlaggedSession[]> {
   const { data } = await api.get<{ success: true; data: { sessions: FlaggedSession[]; total: number } }>('/manager/flagged');
   return data.data.sessions;
+}
+
+export async function reviewFlaggedSession(timeEntryId: number, breakEndTime: string): Promise<void> {
+  await api.patch(`/manager/flagged/${timeEntryId}/review`, { breakEndTime });
 }
 
 export interface CorrectionRequest {
