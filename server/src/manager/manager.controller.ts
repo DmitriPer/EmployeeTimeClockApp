@@ -52,6 +52,54 @@ export async function handleReviewOvertime(
   }
 }
 
+const ReviewCorrectionSchema = z.object({
+  action: z.enum(['APPROVED', 'REJECTED']),
+  note: z.string().max(1000).nullable().optional(),
+});
+
+export async function handleGetCorrectionQueue(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const data = await service.getCorrectionRequests(req.user!.id, req.user!.role);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function handleReviewCorrectionRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const requestId = parseInt(String(req.params.id ?? ''), 10);
+    if (isNaN(requestId)) {
+      throw new AppError('Invalid request ID.', 400, ErrorCode.VALIDATION_ERROR);
+    }
+
+    const parsed = ReviewCorrectionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(parsed.error.errors[0]?.message ?? 'Invalid payload.', 400, ErrorCode.VALIDATION_ERROR);
+    }
+
+    await service.reviewCorrectionRequest({
+      requestId,
+      reviewerId: req.user!.id,
+      reviewerRole: req.user!.role,
+      action: parsed.data.action,
+      note: parsed.data.note ?? null,
+    });
+
+    res.status(200).json({ success: true, data: null });
+  } catch (err) {
+    next(err);
+  }
+}
+
 const FlaggedQuerySchema = z.object({
   employeeId: z.coerce.number().int().positive().optional(),
 });
