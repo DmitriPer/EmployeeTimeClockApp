@@ -13,6 +13,13 @@ export interface OvertimeRecord {
   overtimeMinutes: number;
 }
 
+export interface PendingCorrectionRecord {
+  id: number;
+  requestedClockInAt: string;
+  requestedClockOutAt: string | null;
+  employeeNote: string;
+}
+
 export interface HistoryEntry {
   id: number;
   clockInAt: string;
@@ -23,9 +30,11 @@ export interface HistoryEntry {
   paidMinutes: number | null;
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
+  isCorrected: boolean;
   employeeNote: string | null;
   breaks: BreakRecord[];
   overtimeRequest: OvertimeRecord | null;
+  pendingCorrection: PendingCorrectionRecord | null;
 }
 
 export interface HistoryQuery {

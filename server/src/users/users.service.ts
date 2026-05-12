@@ -17,8 +17,11 @@ async function validateManagerId(managerId: number | null | undefined): Promise<
   }
 }
 
-export async function listUsers() {
-  const rows = await repo.findAllUsers();
+export async function listUsers(requester: { id: number; role: UserRole }) {
+  const rows =
+    requester.role === UserRole.ADMIN
+      ? await repo.findAllUsers()
+      : await repo.findUsersForManager(requester.id);
   const users = rows.map((u) => ({
     id: u.id,
     employeeId: u.employee_id,

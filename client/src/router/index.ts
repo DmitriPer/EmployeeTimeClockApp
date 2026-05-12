@@ -55,6 +55,11 @@ export const router = createRouter({
               name: 'manager-history',
               component: () => import('../views/manager/ManagerHistoryView.vue'),
             },
+            {
+              path: 'corrections',
+              name: 'manager-corrections',
+              component: () => import('../views/manager/CorrectionRequestQueueView.vue'),
+            },
           ],
         },
         {

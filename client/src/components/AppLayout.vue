@@ -81,6 +81,15 @@ async function handleLogout(): Promise<void> {
               Employee History
             </RouterLink>
           </li>
+          <li>
+            <RouterLink
+              to="/manager/corrections"
+              class="flex items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              active-class="bg-blue-50 text-blue-600 font-medium"
+            >
+              Edit Requests
+            </RouterLink>
+          </li>
         </template>
 
         <li>

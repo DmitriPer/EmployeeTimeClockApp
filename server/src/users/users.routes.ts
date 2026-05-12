@@ -41,9 +41,9 @@ usersRouter.get(
 usersRouter.get(
   '/',
   requireRoles(UserRole.MANAGER, UserRole.ADMIN),
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await service.listUsers();
+      const result = await service.listUsers(req.user!);
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
