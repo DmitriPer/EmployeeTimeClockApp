@@ -229,8 +229,8 @@ async function submitFix(): Promise<void> {
       <!-- Flagged Sessions -->
       <template v-else-if="activeTab === 'flagged'">
         <div v-if="sessions.length === 0" class="text-sm text-gray-400">No flagged sessions.</div>
-        <!-- Mobile cards -->
-        <div class="md:hidden space-y-2">
+        <!-- Cards (< lg) -->
+        <div class="lg:hidden space-y-2">
           <article
             v-for="s in sessions"
             :key="s.timeEntryId"
@@ -257,8 +257,8 @@ async function submitFix(): Promise<void> {
             </div>
           </article>
         </div>
-        <!-- Desktop table -->
-        <div class="hidden md:block overflow-x-auto rounded border border-gray-200">
+        <!-- Desktop table (≥ lg) -->
+        <div class="hidden lg:block overflow-x-auto rounded border border-gray-200">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
               <tr>

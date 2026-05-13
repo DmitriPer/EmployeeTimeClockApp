@@ -247,8 +247,8 @@ function getManagerName(managerId: number | null): string {
     <template v-if="mode === 'list'">
       <div v-if="loading" class="p-4 text-sm text-gray-400">Loading…</div>
       <template v-else>
-        <!-- Mobile cards -->
-        <div class="md:hidden space-y-2">
+        <!-- Cards (< lg) -->
+        <div class="lg:hidden space-y-2">
           <article
             v-for="u in users"
             :key="u.id"
@@ -272,8 +272,8 @@ function getManagerName(managerId: number | null): string {
             </footer>
           </article>
         </div>
-        <!-- Desktop table -->
-        <div class="hidden md:block overflow-x-auto rounded border border-gray-200">
+        <!-- Desktop table (≥ lg) -->
+        <div class="hidden lg:block overflow-x-auto rounded border border-gray-200">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
               <tr>

@@ -51,8 +51,8 @@ function otVariant(status: string): 'pending' | 'approved' | 'rejected' {
 </script>
 
 <template>
-  <!-- Mobile card list (< md) -->
-  <div class="md:hidden space-y-2">
+  <!-- Card list (< lg) -->
+  <div class="lg:hidden space-y-2">
     <article
       v-for="entry in entries"
       :key="entry.id"
@@ -136,8 +136,8 @@ function otVariant(status: string): 'pending' | 'approved' | 'rejected' {
     </article>
   </div>
 
-  <!-- Desktop table (≥ md) -->
-  <div class="hidden md:block overflow-x-auto rounded border border-gray-200">
+  <!-- Desktop table (≥ lg) -->
+  <div class="hidden lg:block overflow-x-auto rounded border border-gray-200">
     <table class="min-w-full text-sm">
       <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
         <tr>
