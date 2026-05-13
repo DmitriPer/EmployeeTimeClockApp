@@ -80,7 +80,7 @@ function otVariant(status: string): 'pending' | 'approved' | 'rejected' {
                 :breaks="entry.breaks"
                 :total-minutes="entry.totalBreakMinutes"
                 :excess-minutes="entry.excessBreakMinutes"
-                :is-auto-closed-break="entry.isAutoClosedBreak"
+                :is-auto-closed-break="entry.isAutoClosedBreak && !entry.isBreakReviewed"
               />
             </td>
             <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
