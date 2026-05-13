@@ -1,6 +1,7 @@
 import { api } from './client.js';
+import type { ExportFormat } from '@app/shared';
 
-export type ExportFormat = 'csv' | 'xls' | 'pdf';
+export type { ExportFormat };
 
 export async function downloadExport(params: {
   from?: string;

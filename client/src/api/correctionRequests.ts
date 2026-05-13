@@ -1,31 +1,20 @@
 import { api } from './client.js';
+import type {
+  BreakInputDto,
+  CorrectionRequestResultDto,
+  SubmitCorrectionRequestPayload,
+  UpdateCorrectionRequestPayload,
+  ApiSuccess,
+} from '@app/shared';
 
-export interface BreakInput {
-  start: string;
-  end: string;
-}
+// Legacy aliases — remove once all callers use the Dto names.
+export type BreakInput = BreakInputDto;
+export type CorrectionRequestResult = CorrectionRequestResultDto;
 
-export interface CorrectionRequestResult {
-  id: number;
-  timeEntryId: number;
-  requestedClockIn: string;
-  requestedClockOut: string | null;
-  breaks: BreakInput[] | null;
-  employeeNote: string;
-  status: string;
-  managerNote: string | null;
-  reviewedAt: string | null;
-  updatedAt: string;
-}
-
-export async function submitCorrectionRequest(dto: {
-  timeEntryId: number;
-  clockInTime: string;
-  clockOutTime?: string;
-  breaks?: BreakInput[];
-  employeeNote: string;
-}): Promise<CorrectionRequestResult> {
-  const { data } = await api.post<{ success: true; data: CorrectionRequestResult }>(
+export async function submitCorrectionRequest(
+  dto: SubmitCorrectionRequestPayload,
+): Promise<CorrectionRequestResultDto> {
+  const { data } = await api.post<ApiSuccess<CorrectionRequestResultDto>>(
     '/correction-requests',
     dto,
   );
@@ -34,8 +23,8 @@ export async function submitCorrectionRequest(dto: {
 
 export async function getCorrectionRequestForEntry(
   timeEntryId: number,
-): Promise<CorrectionRequestResult | null> {
-  const { data } = await api.get<{ success: true; data: CorrectionRequestResult | null }>(
+): Promise<CorrectionRequestResultDto | null> {
+  const { data } = await api.get<ApiSuccess<CorrectionRequestResultDto | null>>(
     `/correction-requests?timeEntryId=${timeEntryId}`,
   );
   return data.data;
@@ -43,14 +32,9 @@ export async function getCorrectionRequestForEntry(
 
 export async function updateCorrectionRequest(
   id: number,
-  dto: {
-    clockInTime?: string;
-    clockOutTime?: string;
-    breaks?: BreakInput[];
-    employeeNote?: string;
-  },
-): Promise<CorrectionRequestResult> {
-  const { data } = await api.patch<{ success: true; data: CorrectionRequestResult }>(
+  dto: UpdateCorrectionRequestPayload,
+): Promise<CorrectionRequestResultDto> {
+  const { data } = await api.patch<ApiSuccess<CorrectionRequestResultDto>>(
     `/correction-requests/${id}`,
     dto,
   );

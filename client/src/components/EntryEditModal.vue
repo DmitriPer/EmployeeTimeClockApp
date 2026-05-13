@@ -8,6 +8,8 @@ import {
   deleteCorrectionRequest,
 } from '../api/correctionRequests.js';
 import TimeInput from './TimeInput.vue';
+import { formatTime as toTimeInput } from '../utils/format.js';
+import { getApiErrorMessage } from '../api/utils.js';
 
 const props = defineProps<{
   entry: HistoryEntry;
@@ -19,17 +21,6 @@ const emit = defineEmits<{
   submitted: [result: CorrectionRequestResult];
   deleted: [];
 }>();
-
-const TZ = 'Asia/Jerusalem';
-
-function toTimeInput(iso: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: TZ,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(iso));
-}
 
 function initBreaks(): BreakInput[] {
   if (props.existing?.breaks) return props.existing.breaks.map((b) => ({ ...b }));
@@ -123,8 +114,8 @@ async function handleSubmit(): Promise<void> {
       });
     }
     emit('submitted', result);
-  } catch (e: any) {
-    error.value = e?.response?.data?.error?.message ?? 'Failed to submit request.';
+  } catch (e: unknown) {
+    error.value = getApiErrorMessage(e, 'Failed to submit request.');
   } finally {
     saving.value = false;
   }

@@ -13,12 +13,12 @@ import {
   type CreateUserPayload,
 } from '../../api/users.js';
 import { getApiErrorMessage } from '../../api/utils.js';
+import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const authStore = useAuthStore();
 
 const users = ref<UserSummary[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runUsers } = useAsyncData<UserSummary[]>();
 
 type Mode = 'list' | 'create' | 'edit' | 'reset';
 const mode = ref<Mode>('list');
@@ -47,15 +47,8 @@ onMounted(async () => {
 });
 
 async function loadUsers(): Promise<void> {
-  loading.value = true;
-  error.value = null;
-  try {
-    users.value = await fetchUsers();
-  } catch {
-    error.value = 'Failed to load users.';
-  } finally {
-    loading.value = false;
-  }
+  const result = await runUsers(() => fetchUsers(), 'Failed to load users.');
+  if (result !== null) users.value = result;
 }
 
 function suggestNextId(role: UserRole): string {

@@ -1,49 +1,31 @@
 import { api } from './client.js';
-import { ClockStatus } from '@app/shared';
+import type { ClockStatusDto, ClockOutSummaryDto, ApiSuccess } from '@app/shared';
 
-export interface ClockStatusData {
-  status: ClockStatus;
-  entryId?: number;
-  clockInAt?: string;
-  breakStartAt?: string | null;
-  totalBreakMinutes: number;
-  grossMinutes?: number;
-}
+// Legacy aliases — remove once all callers use the Dto names.
+export type ClockStatusData = ClockStatusDto;
+export type ClockOutData = ClockOutSummaryDto;
 
-export interface ClockOutData {
-  entryId: number;
-  clockInAt: string;
-  clockOutAt: string;
-  grossMinutes: number;
-  totalBreakMinutes: number;
-  excessBreakMinutes: number;
-  paidMinutes: number;
-  isAutoClosedBreak: boolean;
-  isFlagged: boolean;
-  overtimeMinutes: number;
-}
-
-export async function fetchStatus(): Promise<ClockStatusData> {
-  const { data } = await api.get<{ success: true; data: ClockStatusData }>('/timeclock/status');
+export async function fetchStatus(): Promise<ClockStatusDto> {
+  const { data } = await api.get<ApiSuccess<ClockStatusDto>>('/timeclock/status');
   return data.data;
 }
 
-export async function clockIn(): Promise<ClockStatusData> {
-  const { data } = await api.post<{ success: true; data: ClockStatusData }>('/timeclock/clock-in');
+export async function clockIn(): Promise<ClockStatusDto> {
+  const { data } = await api.post<ApiSuccess<ClockStatusDto>>('/timeclock/clock-in');
   return data.data;
 }
 
-export async function clockOut(): Promise<ClockOutData> {
-  const { data } = await api.post<{ success: true; data: ClockOutData }>('/timeclock/clock-out');
+export async function clockOut(): Promise<ClockOutSummaryDto> {
+  const { data } = await api.post<ApiSuccess<ClockOutSummaryDto>>('/timeclock/clock-out');
   return data.data;
 }
 
-export async function startBreak(): Promise<ClockStatusData> {
-  const { data } = await api.post<{ success: true; data: ClockStatusData }>('/timeclock/break/start');
+export async function startBreak(): Promise<ClockStatusDto> {
+  const { data } = await api.post<ApiSuccess<ClockStatusDto>>('/timeclock/break/start');
   return data.data;
 }
 
-export async function endBreak(): Promise<ClockStatusData> {
-  const { data } = await api.post<{ success: true; data: ClockStatusData }>('/timeclock/break/end');
+export async function endBreak(): Promise<ClockStatusDto> {
+  const { data } = await api.post<ApiSuccess<ClockStatusDto>>('/timeclock/break/end');
   return data.data;
 }

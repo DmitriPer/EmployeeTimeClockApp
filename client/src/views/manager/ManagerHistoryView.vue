@@ -6,6 +6,8 @@ import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
 import BreakPopover from '../../components/BreakPopover.vue';
+import { formatDate, formatTime, formatMinutes } from '../../utils/format.js';
+import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -13,8 +15,7 @@ const router = useRouter();
 const users = ref<UserSummary[]>([]);
 const selectedUserId = ref<number | null>(null);
 const entries = ref<HistoryEntry[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runHistory } = useAsyncData<HistoryEntry[]>();
 const from = ref('');
 const to = ref('');
 
@@ -38,19 +39,12 @@ function onUserChange(): void {
 
 async function loadHistory(): Promise<void> {
   if (!selectedUserId.value) return;
-  loading.value = true;
-  error.value = null;
-  try {
-    entries.value = await fetchHistory({
-      userId: selectedUserId.value,
-      from: from.value || undefined,
-      to: to.value || undefined,
-    });
-  } catch {
-    error.value = 'Failed to load history.';
-  } finally {
-    loading.value = false;
-  }
+  const uid = selectedUserId.value;
+  const result = await runHistory(
+    () => fetchHistory({ userId: uid, from: from.value || undefined, to: to.value || undefined }),
+    'Failed to load history.',
+  );
+  if (result !== null) entries.value = result;
 }
 
 const exporting = ref(false);
@@ -72,23 +66,6 @@ async function handleExport(format: ExportFormat): Promise<void> {
   }
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jerusalem',
-  });
-}
-
-function formatMinutes(m: number | null): string {
-  if (m === null) return '—';
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60 > 0 ? `${m % 60}m` : ''}`.trim();
-}
 </script>
 
 <template>

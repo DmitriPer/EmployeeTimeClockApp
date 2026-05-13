@@ -33,6 +33,8 @@ const openEntry = {
   is_flagged: 1,
   is_retroactive: 0,
   employee_note: null,
+  manager_reviewed_at: null,
+  manager_reviewed_by: null,
   created_at: clockInAt,
 };
 

@@ -161,9 +161,14 @@ describe('getFlaggedSessions', () => {
         user_id: 10,
         clock_in_at: new Date('2024-06-01T06:00:00.000Z'),
         clock_out_at: new Date('2024-06-01T15:00:00.000Z'),
+        manager_reviewed_at: null,
+        manager_reviewed_by: null,
         employee_name: 'Dana Cohen',
         employee_id: 'EMP001',
         correction_count: 2,
+        break_start_at: null,
+        break_end_at: null,
+        reviewed_by_name: null,
       },
     ]);
 
