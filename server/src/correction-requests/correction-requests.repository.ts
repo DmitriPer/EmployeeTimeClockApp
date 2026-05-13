@@ -99,14 +99,7 @@ export async function findPendingCorrectionRequests(reviewerId: number, managerI
     ])
     .where('cr.status', '=', 'PENDING')
     .where('cr.user_id', '!=', reviewerId)
-    .$if(managerId !== undefined, (qb) =>
-      qb.where((eb) =>
-        eb.or([
-          eb('u.manager_id', '=', managerId!),
-          eb('u.role', 'in', ['MANAGER', 'ADMIN']),
-        ]),
-      ),
-    )
+    .$if(managerId !== undefined, (qb) => qb.where('u.manager_id', '=', managerId!))
     .orderBy('cr.created_at', 'asc')
     .execute();
 }

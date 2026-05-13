@@ -71,18 +71,7 @@ export async function findPendingRetroactiveRequests(managerId?: number) {
     .where('r.status', '=', 'PENDING');
 
   if (managerId !== undefined) {
-    query = query.where((eb) =>
-      eb.or([
-        eb('u.manager_id', '=', managerId),
-        eb.and([
-          eb('u.role', 'in', ['MANAGER', 'ADMIN']),
-          eb('r.user_id', '!=', managerId),
-        ]),
-      ]),
-    ) as typeof query;
-  } else {
-    // ADMIN — exclude own requests
-    query = query.where('r.user_id', '!=', managerId ?? 0) as typeof query;
+    query = query.where('u.manager_id', '=', managerId) as typeof query;
   }
 
   return query.orderBy('r.created_at', 'asc').execute();
