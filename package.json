@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm run build -w @app/shared && concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w @app/shared && npm run build -w server && npm run build -w client",
-    "test": "npm run test -w @app/shared && npm run test -w server"
+    "test": "npm run test -w server && npm run test -w client"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

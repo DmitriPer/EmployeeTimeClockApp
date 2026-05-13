@@ -1,61 +1,19 @@
 import { api } from './client.js';
+import type { HistoryEntryDto, HistoryQueryParams, ApiSuccess } from '@app/shared';
 
-export interface BreakRecord {
-  id: number;
-  breakStartAt: string;
-  breakEndAt: string | null;
-  durationMinutes: number | null;
-}
+// Legacy aliases — remove once all callers use the Dto names.
+export type BreakRecord = import('@app/shared').BreakRecordDto;
+export type OvertimeRecord = import('@app/shared').OvertimeRecordDto;
+export type PendingCorrectionRecord = import('@app/shared').PendingCorrectionRecordDto;
+export type HistoryEntry = HistoryEntryDto;
+export type HistoryQuery = HistoryQueryParams;
 
-export interface OvertimeRecord {
-  id: number;
-  status: string;
-  overtimeMinutes: number;
-}
-
-export interface PendingCorrectionRecord {
-  id: number;
-  status: 'PENDING' | 'REJECTED';
-  requestedClockInAt: string;
-  requestedClockOutAt: string | null;
-  employeeNote: string;
-  managerNote: string | null;
-}
-
-export interface HistoryEntry {
-  id: number;
-  clockInAt: string;
-  clockOutAt: string | null;
-  grossMinutes: number | null;
-  totalBreakMinutes: number;
-  excessBreakMinutes: number;
-  paidMinutes: number | null;
-  isAutoClosedBreak: boolean;
-  isFlagged: boolean;
-  isBreakReviewed: boolean;
-  isCorrected: boolean;
-  isRetroactive: boolean;
-  employeeNote: string | null;
-  breaks: BreakRecord[];
-  overtimeRequest: OvertimeRecord | null;
-  pendingCorrection: PendingCorrectionRecord | null;
-}
-
-export interface HistoryQuery {
-  from?: string;
-  to?: string;
-  userId?: number;
-}
-
-export async function fetchHistory(query: HistoryQuery = {}): Promise<HistoryEntry[]> {
+export async function fetchHistory(query: HistoryQueryParams = {}): Promise<HistoryEntryDto[]> {
   const params = new URLSearchParams();
   if (query.from) params.set('from', query.from);
   if (query.to) params.set('to', query.to);
   if (query.userId) params.set('userId', String(query.userId));
-
-  const { data } = await api.get<{ success: true; data: HistoryEntry[] }>(
-    `/history?${params.toString()}`,
-  );
+  const { data } = await api.get<ApiSuccess<HistoryEntryDto[]>>(`/history?${params.toString()}`);
   return data.data;
 }
 

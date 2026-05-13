@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import type { BreakRecord } from '../api/history.js';
+import { formatTime, formatMinutes } from '../utils/format.js';
 
 const props = defineProps<{
   breaks: BreakRecord[];
@@ -9,26 +10,10 @@ const props = defineProps<{
   isAutoClosedBreak: boolean;
 }>();
 
-const TZ = 'Asia/Jerusalem';
 const open = ref(false);
 const triggerRef = ref<HTMLElement | null>(null);
 
 const popoverStyle = ref<{ top?: string; bottom?: string; left: string }>({ left: '0px' });
-
-function formatTime(iso: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: TZ,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(iso));
-}
-
-function formatMinutes(m: number | null): string {
-  if (m === null || m === 0) return '0m';
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60 > 0 ? `${m % 60}m` : ''}`.trim();
-}
 
 function toggle(): void {
   if (!open.value && triggerRef.value) {

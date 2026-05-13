@@ -7,12 +7,12 @@ import EntryEditModal from '../components/EntryEditModal.vue';
 import BreakPopover from '../components/BreakPopover.vue';
 import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
 import { isCurrentMonthEntry } from '../utils/periodLock.js';
-
-const TZ = 'Asia/Jerusalem';
+import { formatDate, formatTime, formatMinutes } from '../utils/format.js';
+import { APP_TIMEZONE } from '../config/app.js';
+import { useAsyncData } from '../composables/useAsyncData.js';
 
 const entries = ref<HistoryEntry[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runHistory } = useAsyncData<HistoryEntry[]>();
 const editingNoteId = ref<number | null>(null);
 const noteInput = ref('');
 const modalEntry = ref<HistoryEntry | null>(null);
@@ -36,7 +36,7 @@ function getMonthRange(): { from: string; to: string } {
   const today = new Date();
   const isCurrent = y === today.getFullYear() && m === today.getMonth();
   const to = isCurrent
-    ? new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(today)
+    ? new Intl.DateTimeFormat('en-CA', { timeZone: APP_TIMEZONE }).format(today)
     : `${y}-${String(m + 1).padStart(2, '0')}-${new Date(y, m + 1, 0).getDate()}`;
   return { from, to };
 }
@@ -57,35 +57,14 @@ function nextMonth(): void {
 onMounted(() => loadHistory());
 
 async function loadHistory(): Promise<void> {
-  loading.value = true;
-  error.value = null;
-  try {
-    const range = getMonthRange();
-    entries.value = await fetchHistory({ from: range.from, to: range.to });
-  } catch {
-    error.value = 'Failed to load history.';
-  } finally {
-    loading.value = false;
-  }
+  const range = getMonthRange();
+  const result = await runHistory(
+    () => fetchHistory({ from: range.from, to: range.to }),
+    'Failed to load history.',
+  );
+  if (result !== null) entries.value = result;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: TZ,
-  });
-}
-
-function formatMinutes(m: number | null): string {
-  if (m === null) return '—';
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60 > 0 ? `${m % 60}m` : ''}`.trim();
-}
 
 function startEditNote(entry: HistoryEntry): void {
   editingNoteId.value = entry.id;

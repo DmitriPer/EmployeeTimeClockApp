@@ -1,40 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { fetchOvertimeQueue, reviewOvertime, type OvertimeRequest } from '../../api/manager.js';
+import { formatDate, formatTime, formatMinutes } from '../../utils/format.js';
+import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const requests = ref<OvertimeRequest[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runLoad } = useAsyncData<OvertimeRequest[]>();
 const reviewingId = ref<number | null>(null);
 const noteInput = ref('');
 
 onMounted(async () => {
-  loading.value = true;
-  try {
-    requests.value = await fetchOvertimeQueue();
-  } catch {
-    error.value = 'Failed to load overtime requests.';
-  } finally {
-    loading.value = false;
-  }
+  const result = await runLoad(() => fetchOvertimeQueue(), 'Failed to load overtime requests.');
+  if (result !== null) requests.value = result;
 });
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jerusalem',
-  });
-}
-
-function formatMinutes(m: number): string {
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60 > 0 ? `${m % 60}m` : ''}`.trim();
-}
 
 function startReview(id: number): void {
   reviewingId.value = id;

@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { DateTime } from 'luxon';
 import type { BreakInput } from '../api/correctionRequests.js';
+import { getApiErrorMessage } from '../api/utils.js';
+import { APP_TIMEZONE } from '../config/app.js';
+import { useAsyncData } from '../composables/useAsyncData.js';
 import {
   getMyRetroactiveRequests,
   submitRetroactiveRequest,
@@ -12,11 +15,8 @@ import TimeInput from './TimeInput.vue';
 
 const props = defineProps<{ month: string }>();
 
-const TZ = 'Asia/Jerusalem';
-
 const allRequests = ref<RetroactiveRequestResult[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runLoad } = useAsyncData<RetroactiveRequestResult[]>();
 
 const showModal = ref(false);
 const formDate = ref('');
@@ -27,7 +27,7 @@ const formNote = ref('');
 const submitting = ref(false);
 const formError = ref<string | null>(null);
 
-const currentMonth = computed(() => DateTime.now().setZone(TZ).toFormat('yyyy-MM'));
+const currentMonth = computed(() => DateTime.now().setZone(APP_TIMEZONE).toFormat('yyyy-MM'));
 const isViewingCurrentMonth = computed(() => props.month === currentMonth.value);
 
 const requests = computed(() =>
@@ -36,18 +36,12 @@ const requests = computed(() =>
 
 const hasPending = computed(() => allRequests.value.some((r) => r.status === 'PENDING'));
 
-const today = computed(() => DateTime.now().setZone(TZ).toISODate()!);
-const monthMin = computed(() => DateTime.now().setZone(TZ).startOf('month').toISODate()!);
+const today = computed(() => DateTime.now().setZone(APP_TIMEZONE).toISODate()!);
+const monthMin = computed(() => DateTime.now().setZone(APP_TIMEZONE).startOf('month').toISODate()!);
 
 onMounted(async () => {
-  loading.value = true;
-  try {
-    allRequests.value = await getMyRetroactiveRequests();
-  } catch {
-    error.value = 'Failed to load requests.';
-  } finally {
-    loading.value = false;
-  }
+  const result = await runLoad(() => getMyRetroactiveRequests(), 'Failed to load requests.');
+  if (result !== null) allRequests.value = result;
 });
 
 function openModal(): void {
@@ -90,8 +84,8 @@ async function submitForm(): Promise<void> {
     });
     allRequests.value = [result, ...allRequests.value];
     closeModal();
-  } catch (e: any) {
-    formError.value = e?.response?.data?.error?.message ?? 'Failed to submit request.';
+  } catch (e: unknown) {
+    formError.value = getApiErrorMessage(e, 'Failed to submit request.');
   } finally {
     submitting.value = false;
   }

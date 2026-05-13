@@ -1,50 +1,24 @@
 import { api } from './client.js';
-import type { UserRole } from '@app/shared';
+import type {
+  UserSummaryDto,
+  OwnProfileDto,
+  CreateUserPayload,
+  UpdateUserPayload,
+  ApiSuccess,
+} from '@app/shared';
 
-export interface UserSummary {
-  id: number;
-  employeeId: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: string;
-  managerId: number | null;
-}
+// Legacy aliases — remove once all callers use the Dto names.
+export type UserSummary = UserSummaryDto;
+export type OwnProfile = OwnProfileDto;
+export type { CreateUserPayload, UpdateUserPayload } from '@app/shared';
 
-export interface OwnProfile {
-  id: number;
-  employeeId: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  managerId: number | null;
-  managerName: string | null;
-}
-
-export interface CreateUserPayload {
-  employeeId: string;
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  managerId?: number | null;
-}
-
-export interface UpdateUserPayload {
-  name?: string;
-  email?: string;
-  role?: UserRole;
-  managerId?: number | null;
-}
-
-export async function fetchOwnProfile(): Promise<OwnProfile> {
-  const { data } = await api.get<{ success: true; data: OwnProfile }>('/users/me');
+export async function fetchOwnProfile(): Promise<OwnProfileDto> {
+  const { data } = await api.get<ApiSuccess<OwnProfileDto>>('/users/me');
   return data.data;
 }
 
-export async function fetchUsers(): Promise<UserSummary[]> {
-  const { data } = await api.get<{ success: true; data: { users: UserSummary[]; total: number } }>('/users');
+export async function fetchUsers(): Promise<UserSummaryDto[]> {
+  const { data } = await api.get<ApiSuccess<{ users: UserSummaryDto[]; total: number }>>('/users');
   return data.data.users;
 }
 

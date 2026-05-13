@@ -2,35 +2,21 @@
 import { ref, onMounted } from 'vue';
 import { fetchFlaggedSessions, reviewFlaggedSession, type FlaggedSession } from '../../api/manager.js';
 import TimeInput from '../../components/TimeInput.vue';
+import { formatDate, formatTime } from '../../utils/format.js';
+import { getApiErrorMessage } from '../../api/utils.js';
+import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const sessions = ref<FlaggedSession[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runLoad } = useAsyncData<FlaggedSession[]>();
 const fixingSession = ref<FlaggedSession | null>(null);
 const breakEndInput = ref('');
 const submitting = ref(false);
 const formError = ref<string | null>(null);
 
-const TZ = 'Asia/Jerusalem';
-
 onMounted(async () => {
-  loading.value = true;
-  try {
-    sessions.value = await fetchFlaggedSessions();
-  } catch {
-    error.value = 'Failed to load flagged sessions.';
-  } finally {
-    loading.value = false;
-  }
+  const result = await runLoad(() => fetchFlaggedSessions(), 'Failed to load flagged sessions.');
+  if (result !== null) sessions.value = result;
 });
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
-}
 
 function openModal(s: FlaggedSession): void {
   fixingSession.value = s;
@@ -63,8 +49,8 @@ async function submitFix(): Promise<void> {
       };
     }
     closeModal();
-  } catch (e: any) {
-    formError.value = e?.response?.data?.error?.message ?? 'Failed to save correction.';
+  } catch (e: unknown) {
+    formError.value = getApiErrorMessage(e, 'Failed to save correction.');
   } finally {
     submitting.value = false;
   }

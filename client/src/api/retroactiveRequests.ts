@@ -1,35 +1,25 @@
 import { api } from './client.js';
-import type { BreakInput } from './correctionRequests.js';
+import type {
+  RetroactiveRequestResultDto,
+  SubmitRetroactiveRequestPayload,
+  ApiSuccess,
+} from '@app/shared';
 
-export interface RetroactiveRequestResult {
-  id: number;
-  date: string;
-  clockInTime: string;
-  clockOutTime: string;
-  breaks: BreakInput[] | null;
-  employeeNote: string;
-  status: string;
-  managerNote: string | null;
-  reviewedAt: string | null;
-  createdAt: string;
-}
+// Legacy alias — remove once all callers use the Dto name.
+export type RetroactiveRequestResult = RetroactiveRequestResultDto;
 
-export async function submitRetroactiveRequest(dto: {
-  date: string;
-  clockInTime: string;
-  clockOutTime: string;
-  breaks?: BreakInput[];
-  employeeNote: string;
-}): Promise<RetroactiveRequestResult> {
-  const { data } = await api.post<{ success: true; data: RetroactiveRequestResult }>(
+export async function submitRetroactiveRequest(
+  dto: SubmitRetroactiveRequestPayload,
+): Promise<RetroactiveRequestResultDto> {
+  const { data } = await api.post<ApiSuccess<RetroactiveRequestResultDto>>(
     '/retroactive-requests',
     dto,
   );
   return data.data;
 }
 
-export async function getMyRetroactiveRequests(): Promise<RetroactiveRequestResult[]> {
-  const { data } = await api.get<{ success: true; data: RetroactiveRequestResult[] }>(
+export async function getMyRetroactiveRequests(): Promise<RetroactiveRequestResultDto[]> {
+  const { data } = await api.get<ApiSuccess<RetroactiveRequestResultDto[]>>(
     '/retroactive-requests',
   );
   return data.data;

@@ -1,48 +1,34 @@
 import { api } from './client.js';
+import type {
+  OvertimeRequestDto,
+  FlaggedSessionDto,
+  ManagerCorrectionRequestDto,
+  ManagerRetroactiveRequestDto,
+  ReviewAction,
+  ApiSuccess,
+} from '@app/shared';
 
-export interface OvertimeRequest {
-  id: number;
-  userId: number;
-  timeEntryId: number;
-  status: string;
-  overtimeMinutes: number;
-  managerNote: string | null;
-  createdAt: string;
-  clockInAt: string;
-  clockOutAt: string | null;
-  employeeName: string;
-  employeeId: string;
-}
+// Legacy aliases — remove once all callers use the Dto names.
+export type OvertimeRequest = OvertimeRequestDto;
+export type FlaggedSession = FlaggedSessionDto;
+export type CorrectionRequest = ManagerCorrectionRequestDto;
+export type PendingRetroactiveRequest = ManagerRetroactiveRequestDto;
 
-export interface FlaggedSession {
-  timeEntryId: number;
-  employeeName: string;
-  employeeId: string;
-  clockInAt: string;
-  clockOutAt: string | null;
-  flagReason: 'AUTO_CLOSED_BREAK';
-  correctionCount: number;
-  breakStartAt: string | null;
-  breakEndAt: string | null;
-  reviewedAt: string | null;
-  reviewedByName: string | null;
-}
-
-export async function fetchOvertimeQueue(): Promise<OvertimeRequest[]> {
-  const { data } = await api.get<{ success: true; data: OvertimeRequest[] }>('/manager/overtime');
+export async function fetchOvertimeQueue(): Promise<OvertimeRequestDto[]> {
+  const { data } = await api.get<ApiSuccess<OvertimeRequestDto[]>>('/manager/overtime');
   return data.data;
 }
 
 export async function reviewOvertime(
   id: number,
-  action: 'APPROVED' | 'REJECTED',
+  action: ReviewAction,
   note: string | null,
 ): Promise<void> {
   await api.patch(`/manager/overtime/${id}/review`, { action, note });
 }
 
-export async function fetchFlaggedSessions(): Promise<FlaggedSession[]> {
-  const { data } = await api.get<{ success: true; data: { sessions: FlaggedSession[]; total: number } }>('/manager/flagged');
+export async function fetchFlaggedSessions(): Promise<FlaggedSessionDto[]> {
+  const { data } = await api.get<ApiSuccess<{ sessions: FlaggedSessionDto[]; total: number }>>('/manager/flagged');
   return data.data.sessions;
 }
 
@@ -50,23 +36,8 @@ export async function reviewFlaggedSession(timeEntryId: number, breakEndTime: st
   await api.patch(`/manager/flagged/${timeEntryId}/review`, { breakEndTime });
 }
 
-export interface CorrectionRequest {
-  id: number;
-  timeEntryId: number;
-  userId: number;
-  employeeName: string;
-  employeeId: string;
-  requestedClockInAt: string;
-  requestedClockOutAt: string | null;
-  requestedBreaks: Array<{ start: string; end: string }> | null;
-  employeeNote: string;
-  currentClockInAt: string;
-  currentClockOutAt: string | null;
-  createdAt: string;
-}
-
-export async function fetchCorrectionQueue(): Promise<CorrectionRequest[]> {
-  const { data } = await api.get<{ success: true; data: CorrectionRequest[] }>(
+export async function fetchCorrectionQueue(): Promise<ManagerCorrectionRequestDto[]> {
+  const { data } = await api.get<ApiSuccess<ManagerCorrectionRequestDto[]>>(
     '/manager/correction-requests',
   );
   return data.data;
@@ -74,26 +45,14 @@ export async function fetchCorrectionQueue(): Promise<CorrectionRequest[]> {
 
 export async function reviewCorrectionRequest(
   id: number,
-  action: 'APPROVED' | 'REJECTED',
+  action: ReviewAction,
   note: string | null,
 ): Promise<void> {
   await api.patch(`/manager/correction-requests/${id}/review`, { action, note });
 }
 
-export interface PendingRetroactiveRequest {
-  id: number;
-  employeeName: string;
-  employeeId: string;
-  date: string;
-  clockInTime: string;
-  clockOutTime: string;
-  breaks: Array<{ start: string; end: string }> | null;
-  employeeNote: string;
-  createdAt: string;
-}
-
-export async function fetchRetroactiveQueue(): Promise<PendingRetroactiveRequest[]> {
-  const { data } = await api.get<{ success: true; data: PendingRetroactiveRequest[] }>(
+export async function fetchRetroactiveQueue(): Promise<ManagerRetroactiveRequestDto[]> {
+  const { data } = await api.get<ApiSuccess<ManagerRetroactiveRequestDto[]>>(
     '/manager/retroactive-requests',
   );
   return data.data;
@@ -101,7 +60,7 @@ export async function fetchRetroactiveQueue(): Promise<PendingRetroactiveRequest
 
 export async function reviewRetroactiveRequest(
   id: number,
-  action: 'APPROVED' | 'REJECTED',
+  action: ReviewAction,
   note: string | null,
 ): Promise<void> {
   await api.patch(`/manager/retroactive-requests/${id}/review`, { action, note });

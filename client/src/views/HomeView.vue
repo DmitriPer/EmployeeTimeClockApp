@@ -6,10 +6,11 @@ import * as timeclockApi from '../api/timeclock.js';
 import type { ClockOutData } from '../api/timeclock.js';
 import { fetchOwnProfile } from '../api/users.js';
 import type { OwnProfile } from '../api/users.js';
+import { formatDuration, formatMinutes, formatTime } from '../utils/format.js';
+import { useAsyncData } from '../composables/useAsyncData.js';
 
 const store = useTimeclockStore();
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runAction } = useAsyncData<void>();
 const clockOutSummary = ref<ClockOutData | null>(null);
 const now = ref(new Date());
 const profile = ref<OwnProfile | null>(null);
@@ -47,81 +48,29 @@ const excessBreakMinutes = computed(() => Math.max(0, totalLiveBreakMinutes.valu
 const grossMinutes = computed(() => Math.floor(grossMs.value / 60_000));
 const overtimeMinutes = computed(() => Math.max(0, grossMinutes.value - 9 * 60));
 
-function formatDuration(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
-}
 
-function formatMinutes(m: number): string {
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jerusalem',
-  });
-}
-
-async function handleClockIn(): Promise<void> {
-  error.value = null;
+const handleClockIn = (): Promise<void | null> => {
   clockOutSummary.value = null;
-  loading.value = true;
-  try {
-    const data = await timeclockApi.clockIn();
-    store.applyStatus(data);
-  } catch {
-    error.value = 'Could not clock in. Please try again.';
-  } finally {
-    loading.value = false;
-  }
-}
+  return runAction(async () => {
+    store.applyStatus(await timeclockApi.clockIn());
+  }, 'Could not clock in. Please try again.');
+};
 
-async function handleClockOut(): Promise<void> {
-  error.value = null;
-  loading.value = true;
-  try {
-    const data = await timeclockApi.clockOut();
-    clockOutSummary.value = data;
+const handleClockOut = (): Promise<void | null> =>
+  runAction(async () => {
+    clockOutSummary.value = await timeclockApi.clockOut();
     store.reset();
-  } catch {
-    error.value = 'Could not clock out. Please try again.';
-  } finally {
-    loading.value = false;
-  }
-}
+  }, 'Could not clock out. Please try again.');
 
-async function handleBreakStart(): Promise<void> {
-  error.value = null;
-  loading.value = true;
-  try {
-    const data = await timeclockApi.startBreak();
-    store.applyStatus(data);
-  } catch {
-    error.value = 'Could not start break. Please try again.';
-  } finally {
-    loading.value = false;
-  }
-}
+const handleBreakStart = (): Promise<void | null> =>
+  runAction(async () => {
+    store.applyStatus(await timeclockApi.startBreak());
+  }, 'Could not start break. Please try again.');
 
-async function handleBreakEnd(): Promise<void> {
-  error.value = null;
-  loading.value = true;
-  try {
-    const data = await timeclockApi.endBreak();
-    store.applyStatus(data);
-  } catch {
-    error.value = 'Could not end break. Please try again.';
-  } finally {
-    loading.value = false;
-  }
-}
+const handleBreakEnd = (): Promise<void | null> =>
+  runAction(async () => {
+    store.applyStatus(await timeclockApi.endBreak());
+  }, 'Could not end break. Please try again.');
 </script>
 
 <template>

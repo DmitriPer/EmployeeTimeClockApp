@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@app/shared": "*",
@@ -21,6 +23,7 @@
     "tailwindcss": "^4.1.0",
     "typescript": "^6.0.3",
     "vite": "^6.3.0",
+    "vitest": "^3.2.4",
     "vue-tsc": "^2.2.0"
   }
 }

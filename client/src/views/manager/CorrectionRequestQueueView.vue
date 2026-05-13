@@ -8,6 +8,9 @@ import {
   type CorrectionRequest,
   type PendingRetroactiveRequest,
 } from '../../api/manager.js';
+import { formatDate, formatTime } from '../../utils/format.js';
+import { getApiErrorMessage } from '../../api/utils.js';
+import { useAsyncData } from '../../composables/useAsyncData.js';
 
 type Tab = 'edits' | 'missed';
 
@@ -15,34 +18,20 @@ const activeTab = ref<Tab>('edits');
 
 const corrections = ref<CorrectionRequest[]>([]);
 const retroactives = ref<PendingRetroactiveRequest[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const { loading, error, run: runLoad } = useAsyncData<[CorrectionRequest[], PendingRetroactiveRequest[]]>();
 const reviewingId = ref<number | null>(null);
 const noteInput = ref('');
 
-const TZ = 'Asia/Jerusalem';
-
 onMounted(async () => {
-  loading.value = true;
-  try {
-    [corrections.value, retroactives.value] = await Promise.all([
-      fetchCorrectionQueue(),
-      fetchRetroactiveQueue(),
-    ]);
-  } catch {
-    error.value = 'Failed to load requests.';
-  } finally {
-    loading.value = false;
+  const result = await runLoad(
+    () => Promise.all([fetchCorrectionQueue(), fetchRetroactiveQueue()]),
+    'Failed to load requests.',
+  );
+  if (result !== null) {
+    [corrections.value, retroactives.value] = result;
   }
 });
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
-}
 
 function startReview(id: number): void {
   reviewingId.value = id;
@@ -55,8 +44,8 @@ async function submitCorrectionReview(id: number, action: 'APPROVED' | 'REJECTED
     await reviewCorrectionRequest(id, action, noteInput.value || null);
     corrections.value = corrections.value.filter((r) => r.id !== id);
     reviewingId.value = null;
-  } catch (e: any) {
-    error.value = e?.response?.data?.error?.message ?? 'Failed to submit review.';
+  } catch (e: unknown) {
+    error.value = getApiErrorMessage(e, 'Failed to submit review.');
   }
 }
 
@@ -66,8 +55,8 @@ async function submitRetroactiveReview(id: number, action: 'APPROVED' | 'REJECTE
     await reviewRetroactiveRequest(id, action, noteInput.value || null);
     retroactives.value = retroactives.value.filter((r) => r.id !== id);
     reviewingId.value = null;
-  } catch (e: any) {
-    error.value = e?.response?.data?.error?.message ?? 'Failed to submit review.';
+  } catch (e: unknown) {
+    error.value = getApiErrorMessage(e, 'Failed to submit review.');
   }
 }
 

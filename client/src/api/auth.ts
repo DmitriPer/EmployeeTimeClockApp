@@ -1,13 +1,11 @@
 import { api } from './client.js';
-import type { UserRole } from '@app/shared';
+import type { LoginResultDto, ApiSuccess } from '@app/shared';
 
-export interface LoginResult {
-  accessToken: string;
-  user: { id: number; name: string; role: UserRole };
-}
+// Legacy alias — remove once all callers use the Dto name.
+export type LoginResult = LoginResultDto;
 
-export async function loginUser(employeeId: string, password: string): Promise<LoginResult> {
-  const { data } = await api.post<{ success: true; data: LoginResult }>('/auth/login', {
+export async function loginUser(employeeId: string, password: string): Promise<LoginResultDto> {
+  const { data } = await api.post<ApiSuccess<LoginResultDto>>('/auth/login', {
     employeeId,
     password,
   });
