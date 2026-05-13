@@ -41,24 +41,26 @@ export const router = createRouter({
           beforeEnter: requireRole([UserRole.MANAGER, UserRole.ADMIN]),
           children: [
             {
+              path: 'approvals',
+              name: 'manager-approvals',
+              component: () => import('../views/manager/ManagerApprovalsView.vue'),
+            },
+            {
               path: 'overtime',
-              name: 'manager-overtime',
-              component: () => import('../views/manager/OvertimeQueueView.vue'),
+              redirect: { name: 'manager-approvals' },
             },
             {
               path: 'flagged',
-              name: 'manager-flagged',
-              component: () => import('../views/manager/FlaggedSessionsView.vue'),
+              redirect: { name: 'manager-approvals' },
+            },
+            {
+              path: 'corrections',
+              redirect: { name: 'manager-approvals' },
             },
             {
               path: 'history',
               name: 'manager-history',
               component: () => import('../views/manager/ManagerHistoryView.vue'),
-            },
-            {
-              path: 'corrections',
-              name: 'manager-corrections',
-              component: () => import('../views/manager/CorrectionRequestQueueView.vue'),
             },
           ],
         },

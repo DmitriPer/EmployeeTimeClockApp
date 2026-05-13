@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { UserRole } from '@app/shared';
 import { useAuthStore } from '../../stores/auth.js';
 import PasswordInput from '../../components/PasswordInput.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import {
   fetchUsers,
   createUser,
@@ -14,6 +15,8 @@ import {
 } from '../../api/users.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
+import FormField from '../../components/ui/FormField.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 
 const authStore = useAuthStore();
 
@@ -154,13 +157,7 @@ function getManagerName(managerId: number | null): string {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-base font-semibold text-gray-800">User Management</h1>
-      <button
-        v-if="mode === 'list'"
-        @click="startCreate"
-        class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-      >
-        + New User
-      </button>
+      <BaseButton v-if="mode === 'list'" @click="startCreate">+ New User</BaseButton>
     </div>
 
     <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
@@ -171,38 +168,32 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'create'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">New User</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Employee ID
-          <input v-model="form.employeeId" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Full Name
-          <input v-model="form.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Email
-          <input v-model="form.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Password
-          <PasswordInput v-model="form.password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Role
-          <select v-model="form.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        <FormField label="Employee ID" v-slot="{ id }">
+          <input :id="id" v-model="form.employeeId" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Full Name" v-slot="{ id }">
+          <input :id="id" v-model="form.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Email" v-slot="{ id }">
+          <input :id="id" v-model="form.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="form.password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
+        <FormField label="Role" v-slot="{ id }">
+          <select :id="id" v-model="form.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Manager
-          <select v-model="form.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        </FormField>
+        <FormField label="Manager" v-slot="{ id }">
+          <select :id="id" v-model="form.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option :value="null">(Unassigned)</option>
             <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
-        </label>
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitCreate" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Create</button>
+        <BaseButton @click="submitCreate">Create</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
@@ -211,30 +202,26 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'edit'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Edit — {{ editingUser?.name }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Full Name
-          <input v-model="editForm.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Email
-          <input v-model="editForm.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Role
-          <select v-model="editForm.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        <FormField label="Full Name" v-slot="{ id }">
+          <input :id="id" v-model="editForm.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Email" v-slot="{ id }">
+          <input :id="id" v-model="editForm.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Role" v-slot="{ id }">
+          <select :id="id" v-model="editForm.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Manager
-          <select v-model="editForm.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        </FormField>
+        <FormField label="Manager" v-slot="{ id }">
+          <select :id="id" v-model="editForm.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option :value="null">(Unassigned)</option>
             <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
-        </label>
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitEdit" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
+        <BaseButton @click="submitEdit">Save</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
@@ -243,17 +230,15 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'reset'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Reset Password — {{ resettingUser?.name }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          New Password
-          <PasswordInput v-model="resetForm.newPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Confirm Password
-          <PasswordInput v-model="resetForm.confirmPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
+        <FormField label="New Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="resetForm.newPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
+        <FormField label="Confirm Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="resetForm.confirmPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitReset" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Reset</button>
+        <BaseButton @click="submitReset">Reset</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
@@ -279,21 +264,11 @@ function getManagerName(managerId: number | null): string {
             <td class="px-4 py-2 text-gray-800">{{ u.name }}</td>
             <td class="px-4 py-2 text-gray-500">{{ u.email }}</td>
             <td class="px-4 py-2">
-              <span class="rounded-full px-2 py-0.5 text-xs"
-                :class="{
-                  'bg-gray-100 text-gray-600': u.role === UserRole.EMPLOYEE,
-                  'bg-blue-100 text-blue-700': u.role === UserRole.MANAGER,
-                  'bg-purple-100 text-purple-700': u.role === UserRole.ADMIN,
-                }">
-                {{ u.role }}
-              </span>
+              <StatusBadge :variant="`role-${u.role.toLowerCase()}` as 'role-employee' | 'role-manager' | 'role-admin'" />
             </td>
             <td class="px-4 py-2 text-sm text-gray-500">{{ getManagerName(u.managerId) }}</td>
             <td class="px-4 py-2">
-              <span class="rounded-full px-2 py-0.5 text-xs"
-                :class="u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'">
-                {{ u.isActive ? 'Active' : 'Inactive' }}
-              </span>
+              <StatusBadge :variant="u.isActive ? 'active' : 'inactive'" />
             </td>
             <td class="px-4 py-2">
               <div class="flex gap-3">

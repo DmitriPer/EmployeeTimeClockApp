@@ -56,20 +56,11 @@ async function handleLogout(): Promise<void> {
         <template v-if="isManagerOrAdmin">
           <li>
             <RouterLink
-              to="/manager/overtime"
+              to="/manager/approvals"
               class="flex items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
               active-class="bg-blue-50 text-blue-600 font-medium"
             >
-              Overtime Queue
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink
-              to="/manager/flagged"
-              class="flex items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              active-class="bg-blue-50 text-blue-600 font-medium"
-            >
-              Flagged Sessions
+              Approvals
             </RouterLink>
           </li>
           <li>
@@ -79,15 +70,6 @@ async function handleLogout(): Promise<void> {
               active-class="bg-blue-50 text-blue-600 font-medium"
             >
               Employee History
-            </RouterLink>
-          </li>
-          <li>
-            <RouterLink
-              to="/manager/corrections"
-              class="flex items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              active-class="bg-blue-50 text-blue-600 font-medium"
-            >
-              Edit Requests
             </RouterLink>
           </li>
         </template>

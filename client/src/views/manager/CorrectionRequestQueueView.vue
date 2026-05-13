@@ -11,6 +11,8 @@ import {
 import { formatDate, formatTime } from '../../utils/format.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
+import ReviewCard from '../../components/data/ReviewCard.vue';
+import AsyncSection from '../../components/ui/AsyncSection.vue';
 
 type Tab = 'edits' | 'missed';
 
@@ -20,7 +22,6 @@ const corrections = ref<CorrectionRequest[]>([]);
 const retroactives = ref<PendingRetroactiveRequest[]>([]);
 const { loading, error, run: runLoad } = useAsyncData<[CorrectionRequest[], PendingRetroactiveRequest[]]>();
 const reviewingId = ref<number | null>(null);
-const noteInput = ref('');
 
 onMounted(async () => {
   const result = await runLoad(
@@ -32,28 +33,22 @@ onMounted(async () => {
   }
 });
 
-
-function startReview(id: number): void {
-  reviewingId.value = id;
-  noteInput.value = '';
-}
-
-async function submitCorrectionReview(id: number, action: 'APPROVED' | 'REJECTED'): Promise<void> {
+async function submitCorrectionReview(req: CorrectionRequest, action: 'APPROVED' | 'REJECTED', note: string | null): Promise<void> {
   error.value = null;
   try {
-    await reviewCorrectionRequest(id, action, noteInput.value || null);
-    corrections.value = corrections.value.filter((r) => r.id !== id);
+    await reviewCorrectionRequest(req.id, action, note);
+    corrections.value = corrections.value.filter((r) => r.id !== req.id);
     reviewingId.value = null;
   } catch (e: unknown) {
     error.value = getApiErrorMessage(e, 'Failed to submit review.');
   }
 }
 
-async function submitRetroactiveReview(id: number, action: 'APPROVED' | 'REJECTED'): Promise<void> {
+async function submitRetroactiveReview(req: PendingRetroactiveRequest, action: 'APPROVED' | 'REJECTED', note: string | null): Promise<void> {
   error.value = null;
   try {
-    await reviewRetroactiveRequest(id, action, noteInput.value || null);
-    retroactives.value = retroactives.value.filter((r) => r.id !== id);
+    await reviewRetroactiveRequest(req.id, action, note);
+    retroactives.value = retroactives.value.filter((r) => r.id !== req.id);
     reviewingId.value = null;
   } catch (e: unknown) {
     error.value = getApiErrorMessage(e, 'Failed to submit review.');
@@ -99,31 +94,24 @@ function switchTab(tab: Tab): void {
       </button>
     </div>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
-
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-
+    <AsyncSection :loading="loading" :error="error">
     <!-- Entry Edits tab -->
-    <template v-else-if="activeTab === 'edits'">
+    <template v-if="activeTab === 'edits'">
       <div v-if="corrections.length === 0" class="text-sm text-gray-400">No pending edit requests.</div>
       <div v-else class="space-y-3">
-        <div
+        <ReviewCard
           v-for="req in corrections"
           :key="req.id"
-          class="rounded border border-gray-200 bg-white p-4 shadow-sm space-y-3"
+          :title="req.employeeName"
+          :subtitle="`(${req.employeeId})`"
+          :timestamp="`Submitted ${formatDate(req.createdAt)}`"
+          :reviewing="reviewingId === req.id"
+          note-placeholder="Manager note (optional)"
+          @start-review="reviewingId = req.id"
+          @cancel="reviewingId = null"
+          @approve="(note) => submitCorrectionReview(req, 'APPROVED', note)"
+          @reject="(note) => submitCorrectionReview(req, 'REJECTED', note)"
         >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="font-medium text-gray-800">
-                {{ req.employeeName }}
-                <span class="text-xs text-gray-400">({{ req.employeeId }})</span>
-              </p>
-              <p class="mt-0.5 text-xs text-gray-400">Submitted {{ formatDate(req.createdAt) }}</p>
-            </div>
-          </div>
-
           <div class="grid grid-cols-2 gap-4 rounded bg-gray-50 p-3 text-xs text-gray-600">
             <div>
               <p class="mb-1 font-medium text-gray-500">Current</p>
@@ -137,22 +125,8 @@ function switchTab(tab: Tab): void {
               </p>
             </div>
           </div>
-
           <p class="text-sm italic text-gray-700">"{{ req.employeeNote }}"</p>
-
-          <div v-if="reviewingId === req.id" class="space-y-2">
-            <input v-model="noteInput" type="text" placeholder="Manager note (optional)" maxlength="1000"
-              class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
-            <div class="flex gap-2">
-              <button @click="submitCorrectionReview(req.id, 'APPROVED')"
-                class="rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700">Approve</button>
-              <button @click="submitCorrectionReview(req.id, 'REJECTED')"
-                class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Reject</button>
-              <button @click="reviewingId = null" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
-            </div>
-          </div>
-          <button v-else @click="startReview(req.id)" class="text-sm text-blue-600 hover:underline">Review</button>
-        </div>
+        </ReviewCard>
       </div>
     </template>
 
@@ -160,45 +134,30 @@ function switchTab(tab: Tab): void {
     <template v-else-if="activeTab === 'missed'">
       <div v-if="retroactives.length === 0" class="text-sm text-gray-400">No pending missed-day requests.</div>
       <div v-else class="space-y-3">
-        <div
+        <ReviewCard
           v-for="req in retroactives"
           :key="req.id"
-          class="rounded border border-gray-200 bg-white p-4 shadow-sm space-y-3"
+          :title="req.employeeName"
+          :subtitle="`(${req.employeeId})`"
+          :timestamp="`Submitted ${req.createdAt.slice(0, 10)}`"
+          :header-badge="{ variant: 'custom', tone: 'gray', label: req.date }"
+          :reviewing="reviewingId === req.id"
+          note-placeholder="Manager note (optional)"
+          @start-review="reviewingId = req.id"
+          @cancel="reviewingId = null"
+          @approve="(note) => submitRetroactiveReview(req, 'APPROVED', note)"
+          @reject="(note) => submitRetroactiveReview(req, 'REJECTED', note)"
         >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="font-medium text-gray-800">
-                {{ req.employeeName }}
-                <span class="text-xs text-gray-400">({{ req.employeeId }})</span>
-              </p>
-              <p class="mt-0.5 text-xs text-gray-400">Submitted {{ req.createdAt.slice(0, 10) }}</p>
-            </div>
-            <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{{ req.date }}</span>
-          </div>
-
           <div class="rounded bg-gray-50 p-3 text-xs text-gray-600 space-y-1">
             <p>{{ req.clockInTime }} — {{ req.clockOutTime }}</p>
             <p v-if="req.breaks && req.breaks.length" class="text-gray-400">
               Breaks: {{ req.breaks.map(b => `${b.start}–${b.end}`).join(', ') }}
             </p>
           </div>
-
           <p class="text-sm italic text-gray-700">"{{ req.employeeNote }}"</p>
-
-          <div v-if="reviewingId === req.id" class="space-y-2">
-            <input v-model="noteInput" type="text" placeholder="Manager note (optional)" maxlength="1000"
-              class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
-            <div class="flex gap-2">
-              <button @click="submitRetroactiveReview(req.id, 'APPROVED')"
-                class="rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700">Approve</button>
-              <button @click="submitRetroactiveReview(req.id, 'REJECTED')"
-                class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">Reject</button>
-              <button @click="reviewingId = null" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
-            </div>
-          </div>
-          <button v-else @click="startReview(req.id)" class="text-sm text-blue-600 hover:underline">Review</button>
-        </div>
+        </ReviewCard>
       </div>
     </template>
+    </AsyncSection>
   </div>
 </template>
