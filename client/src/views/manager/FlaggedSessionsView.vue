@@ -8,6 +8,7 @@ import { formatDate, formatTime } from '../../utils/format.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 import AsyncSection from '../../components/ui/AsyncSection.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 
 const sessions = ref<FlaggedSession[]>([]);
 const { loading, error, run: runLoad } = useAsyncData<FlaggedSession[]>();
@@ -104,13 +105,7 @@ async function submitFix(): Promise<void> {
             </td>
             <td class="px-4 py-2">
               <StatusBadge v-if="s.reviewedAt" variant="break-fixed" :label="`Reviewed by ${s.reviewedByName}`" />
-              <button
-                v-else
-                @click="openModal(s)"
-                class="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700"
-              >
-                Fix
-              </button>
+              <BaseButton v-else size="sm" @click="openModal(s)">Fix</BaseButton>
             </td>
           </tr>
         </tbody>
@@ -168,13 +163,9 @@ async function submitFix(): Promise<void> {
       >
         Cancel
       </button>
-      <button
-        @click="submitFix"
-        :disabled="submitting"
-        class="rounded bg-green-600 px-4 py-1.5 text-sm text-white hover:bg-green-700 disabled:opacity-50"
-      >
+      <BaseButton variant="success" @click="submitFix" :loading="submitting">
         {{ submitting ? 'Saving…' : 'Save' }}
-      </button>
+      </BaseButton>
     </template>
   </BaseModal>
 </template>

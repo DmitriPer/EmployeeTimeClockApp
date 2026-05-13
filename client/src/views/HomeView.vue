@@ -8,6 +8,8 @@ import { fetchOwnProfile } from '../api/users.js';
 import type { OwnProfile } from '../api/users.js';
 import { formatDuration, formatMinutes, formatTime } from '../utils/format.js';
 import { useAsyncData } from '../composables/useAsyncData.js';
+import BaseButton from '../components/ui/BaseButton.vue';
+import StatusBadge from '../components/ui/StatusBadge.vue';
 
 const store = useTimeclockStore();
 const { loading, error, run: runAction } = useAsyncData<void>();
@@ -98,7 +100,7 @@ const handleBreakEnd = (): Promise<void | null> =>
       <div v-if="clockOutSummary.isFlagged" class="rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
         Break was auto-closed at clock-out. This session has been flagged for manager review.
       </div>
-      <button @click="clockOutSummary = null" class="text-sm text-gray-400 hover:text-gray-600">Dismiss</button>
+      <BaseButton variant="ghost" size="sm" @click="clockOutSummary = null">Dismiss</BaseButton>
     </div>
 
     <!-- Main clock card -->
@@ -111,18 +113,12 @@ const handleBreakEnd = (): Promise<void | null> =>
 
       <!-- Status + elapsed -->
       <div class="text-center space-y-2">
-        <span
-          class="inline-block rounded-full px-4 py-1 text-sm font-medium"
-          :class="{
-            'bg-gray-100 text-gray-500': store.status === ClockStatus.NOT_CLOCKED_IN,
-            'bg-green-100 text-green-700': store.status === ClockStatus.WORKING,
-            'bg-blue-100 text-blue-700': store.status === ClockStatus.ON_BREAK,
-          }"
-        >
-          {{ store.status === ClockStatus.NOT_CLOCKED_IN ? 'Not Clocked In'
-           : store.status === ClockStatus.WORKING ? 'Working'
-           : 'On Break' }}
-        </span>
+        <StatusBadge
+          size="md"
+          variant="custom"
+          :tone="store.status === ClockStatus.NOT_CLOCKED_IN ? 'gray' : store.status === ClockStatus.WORKING ? 'green' : 'blue'"
+          :label="store.status === ClockStatus.NOT_CLOCKED_IN ? 'Not Clocked In' : store.status === ClockStatus.WORKING ? 'Working' : 'On Break'"
+        />
 
         <p v-if="store.clockInAt" class="text-xs text-gray-400">
           Since {{ formatTime(store.clockInAt) }}
@@ -158,40 +154,28 @@ const handleBreakEnd = (): Promise<void | null> =>
 
       <!-- Action buttons -->
       <div class="flex flex-col gap-3">
-        <button
+        <BaseButton
           v-if="store.status === ClockStatus.NOT_CLOCKED_IN"
+          size="lg" :loading="loading" class="w-full"
           @click="handleClockIn"
-          :disabled="loading"
-          class="w-full rounded bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          Clock In
-        </button>
+        >Clock In</BaseButton>
 
         <template v-if="store.status === ClockStatus.WORKING">
-          <button
+          <BaseButton
+            variant="secondary" size="lg" :loading="loading" class="w-full"
             @click="handleBreakStart"
-            :disabled="loading"
-            class="w-full rounded border border-gray-300 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Start Break
-          </button>
-          <button
+          >Start Break</BaseButton>
+          <BaseButton
+            variant="dark" size="lg" :loading="loading" class="w-full"
             @click="handleClockOut"
-            :disabled="loading"
-            class="w-full rounded bg-gray-800 px-4 py-3 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50"
-          >
-            Clock Out
-          </button>
+          >Clock Out</BaseButton>
         </template>
 
-        <button
+        <BaseButton
           v-if="store.status === ClockStatus.ON_BREAK"
+          size="lg" :loading="loading" class="w-full"
           @click="handleBreakEnd"
-          :disabled="loading"
-          class="w-full rounded bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          End Break
-        </button>
+        >End Break</BaseButton>
       </div>
     </div>
   </div>

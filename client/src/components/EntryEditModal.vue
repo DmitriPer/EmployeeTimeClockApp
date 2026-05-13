@@ -9,6 +9,8 @@ import {
 } from '../api/correctionRequests.js';
 import TimeInput from './TimeInput.vue';
 import BaseModal from './ui/BaseModal.vue';
+import FormField from './ui/FormField.vue';
+import BaseButton from './ui/BaseButton.vue';
 import { formatTime as toTimeInput } from '../utils/format.js';
 import { getApiErrorMessage } from '../api/utils.js';
 
@@ -114,14 +116,12 @@ async function handleDelete(): Promise<void> {
     <div class="space-y-4">
       <!-- Clock in / out -->
       <div class="grid grid-cols-2 gap-4">
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock In
-          <TimeInput v-model="clockIn" :required="true" input-class="rounded border px-2 py-1 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock Out
-          <TimeInput v-model="clockOut" input-class="rounded border px-2 py-1 text-sm" />
-        </label>
+        <FormField label="Clock In" v-slot="{ id }">
+          <TimeInput :id="id" v-model="clockIn" :required="true" input-class="rounded border px-2 py-1 text-sm" />
+        </FormField>
+        <FormField label="Clock Out" v-slot="{ id }">
+          <TimeInput :id="id" v-model="clockOut" input-class="rounded border px-2 py-1 text-sm" />
+        </FormField>
       </div>
 
       <!-- Breaks -->
@@ -138,16 +138,17 @@ async function handleDelete(): Promise<void> {
       </div>
 
       <!-- Note -->
-      <label class="flex flex-col gap-1 text-sm text-gray-600">
-        Reason <span class="text-red-500">*</span>
+      <FormField label="Reason" :required="true" v-slot="{ id, ariaDescribedby }">
         <textarea
+          :id="id"
+          :aria-describedby="ariaDescribedby"
           v-model="employeeNote"
           rows="2"
           maxlength="1000"
           placeholder="Explain why this entry needs correction"
           class="rounded border border-gray-300 px-2 py-1 text-sm resize-none"
         />
-      </label>
+      </FormField>
 
       <div v-if="error" class="rounded bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
         {{ error }}
@@ -169,13 +170,9 @@ async function handleDelete(): Promise<void> {
       >
         Cancel
       </button>
-      <button
-        @click="handleSubmit"
-        :disabled="saving"
-        class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-      >
+      <BaseButton @click="handleSubmit" :loading="saving">
         {{ saving ? 'Saving…' : existing ? 'Update' : 'Submit' }}
-      </button>
+      </BaseButton>
     </template>
   </BaseModal>
 </template>

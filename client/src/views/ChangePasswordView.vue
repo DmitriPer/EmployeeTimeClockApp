@@ -5,6 +5,7 @@ import { changeOwnPassword } from '../api/users.js';
 import { useAuthStore } from '../stores/auth.js';
 import PasswordInput from '../components/PasswordInput.vue';
 import FormField from '../components/ui/FormField.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
 import { useAsyncData } from '../composables/useAsyncData.js';
 
 const router = useRouter();
@@ -45,13 +46,9 @@ async function submit(): Promise<void> {
         <PasswordInput :id="id" v-model="form.confirmPassword" autocomplete="new-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
       </FormField>
       <div class="pt-1">
-        <button
-          @click="submit"
-          :disabled="loading"
-          class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        <BaseButton @click="submit" :loading="loading">
           {{ loading ? 'Saving…' : 'Change Password' }}
-        </button>
+        </BaseButton>
       </div>
     </div>
 

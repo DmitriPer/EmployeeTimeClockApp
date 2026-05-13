@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
 import HistoryTable from '../../components/data/HistoryTable.vue';
 import AsyncSection from '../../components/ui/AsyncSection.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const authStore = useAuthStore();
@@ -89,9 +90,7 @@ async function handleExport(format: ExportFormat): Promise<void> {
         To
         <input v-model="to" type="date" class="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
-      <button @click="loadHistory" class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
-        Load
-      </button>
+      <BaseButton @click="loadHistory">Load</BaseButton>
       <div class="ml-auto flex gap-2">
         <button
           v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])"

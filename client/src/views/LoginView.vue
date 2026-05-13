@@ -6,6 +6,7 @@ import { ErrorCode } from '@app/shared';
 import { loginUser } from '../api/auth.js';
 import { useAuthStore } from '../stores/auth.js';
 import PasswordInput from '../components/PasswordInput.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -79,13 +80,9 @@ async function handleSubmit(): Promise<void> {
           {{ errorMessage }}
         </p>
 
-        <button
-          type="submit"
-          :disabled="isLoading"
-          class="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        <BaseButton type="submit" :loading="isLoading" class="w-full">
           {{ isLoading ? 'Signing in…' : 'Sign In' }}
-        </button>
+        </BaseButton>
       </form>
     </div>
   </div>

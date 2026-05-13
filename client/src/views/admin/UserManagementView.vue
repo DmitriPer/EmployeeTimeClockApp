@@ -16,6 +16,7 @@ import {
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 import FormField from '../../components/ui/FormField.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 
 const authStore = useAuthStore();
 
@@ -156,13 +157,7 @@ function getManagerName(managerId: number | null): string {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-base font-semibold text-gray-800">User Management</h1>
-      <button
-        v-if="mode === 'list'"
-        @click="startCreate"
-        class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-      >
-        + New User
-      </button>
+      <BaseButton v-if="mode === 'list'" @click="startCreate">+ New User</BaseButton>
     </div>
 
     <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
@@ -198,7 +193,7 @@ function getManagerName(managerId: number | null): string {
         </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitCreate" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Create</button>
+        <BaseButton @click="submitCreate">Create</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
@@ -226,7 +221,7 @@ function getManagerName(managerId: number | null): string {
         </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitEdit" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
+        <BaseButton @click="submitEdit">Save</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
@@ -243,7 +238,7 @@ function getManagerName(managerId: number | null): string {
         </FormField>
       </div>
       <div class="flex gap-2 pt-1">
-        <button @click="submitReset" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Reset</button>
+        <BaseButton @click="submitReset">Reset</BaseButton>
         <button @click="mode = 'list'" class="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>

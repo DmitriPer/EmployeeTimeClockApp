@@ -14,4 +14,6 @@ export type ButtonVariant =
 
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
+export type StatusBadgeSize = 'sm' | 'md';
+
 export type ModalSize = 'sm' | 'md' | 'lg';

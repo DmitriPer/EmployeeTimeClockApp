@@ -15,6 +15,8 @@ import TimeInput from './TimeInput.vue';
 import BaseModal from './ui/BaseModal.vue';
 import StatusBadge from './ui/StatusBadge.vue';
 import AsyncSection from './ui/AsyncSection.vue';
+import FormField from './ui/FormField.vue';
+import BaseButton from './ui/BaseButton.vue';
 
 const props = defineProps<{ month: string }>();
 
@@ -110,13 +112,10 @@ async function handleCancel(id: number): Promise<void> {
   <div class="space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-semibold text-gray-700">Retroactive Entry Requests</h2>
-      <button
+      <BaseButton
         v-if="isViewingCurrentMonth && !showModal && !hasPending"
         @click="openModal"
-        class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-      >
-        Request Missing Entry
-      </button>
+      >Request Missing Entry</BaseButton>
     </div>
 
     <AsyncSection :loading="loading" :error="error" :empty="requests.length === 0" empty-text="No retroactive requests for this month.">
@@ -158,9 +157,9 @@ async function handleCancel(id: number): Promise<void> {
     @close="closeModal"
   >
     <div class="space-y-4">
-      <label class="flex flex-col gap-1 text-sm text-gray-600">
-        Date
+      <FormField label="Date" v-slot="{ id }">
         <input
+          :id="id"
           v-model="formDate"
           type="date"
           :min="monthMin"
@@ -168,17 +167,15 @@ async function handleCancel(id: number): Promise<void> {
           required
           class="w-40 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
         />
-      </label>
+      </FormField>
 
       <div class="grid grid-cols-2 gap-4">
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock In
-          <TimeInput v-model="formClockIn" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-600">
-          Clock Out
-          <TimeInput v-model="formClockOut" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
-        </label>
+        <FormField label="Clock In" v-slot="{ id }">
+          <TimeInput :id="id" v-model="formClockIn" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Clock Out" v-slot="{ id }">
+          <TimeInput :id="id" v-model="formClockOut" :required="true" input-class="rounded border px-2 py-1.5 text-sm" />
+        </FormField>
       </div>
 
       <div class="space-y-2">
@@ -193,16 +190,17 @@ async function handleCancel(id: number): Promise<void> {
         <button @click="addBreak" class="text-xs text-blue-600 hover:underline">+ Add break</button>
       </div>
 
-      <label class="flex flex-col gap-1 text-sm text-gray-600">
-        Reason <span class="text-red-500">*</span>
+      <FormField label="Reason" :required="true" v-slot="{ id, ariaDescribedby }">
         <textarea
+          :id="id"
+          :aria-describedby="ariaDescribedby"
           v-model="formNote"
           rows="2"
           maxlength="1000"
           placeholder="Explain why this entry was missed"
           class="resize-none rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
         />
-      </label>
+      </FormField>
 
       <div v-if="formError" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
         {{ formError }}
@@ -216,13 +214,9 @@ async function handleCancel(id: number): Promise<void> {
       >
         Cancel
       </button>
-      <button
-        @click="submitForm"
-        :disabled="submitting"
-        class="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-      >
+      <BaseButton @click="submitForm" :loading="submitting">
         {{ submitting ? 'Submitting…' : 'Submit' }}
-      </button>
+      </BaseButton>
     </template>
   </BaseModal>
 </template>

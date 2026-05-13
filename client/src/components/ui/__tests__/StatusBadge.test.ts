@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import StatusBadge from '../StatusBadge.vue';
 
-import type { StatusVariant, StatusTone } from '../types.js';
+import type { StatusVariant, StatusTone, StatusBadgeSize } from '../types.js';
 
-function badge(props: { variant: StatusVariant; label?: string; tone?: StatusTone }) {
+function badge(props: { variant: StatusVariant; label?: string; tone?: StatusTone; size?: StatusBadgeSize }) {
   return mount(StatusBadge, { props });
 }
 
@@ -52,5 +52,19 @@ describe('StatusBadge', () => {
   it('overrides preset label when label prop is provided', () => {
     const w = badge({ variant: 'pending', label: 'OT pending' });
     expect(w.text()).toBe('OT pending');
+  });
+
+  it('applies sm size classes by default', () => {
+    const w = badge({ variant: 'pending' });
+    expect(w.classes()).toContain('px-2');
+    expect(w.classes()).toContain('py-0.5');
+    expect(w.classes()).toContain('text-xs');
+  });
+
+  it('applies md size classes when size="md"', () => {
+    const w = badge({ variant: 'pending', size: 'md' });
+    expect(w.classes()).toContain('px-4');
+    expect(w.classes()).toContain('py-1');
+    expect(w.classes()).toContain('text-sm');
   });
 });

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { StatusVariant, StatusTone } from './types.js';
+import type { StatusVariant, StatusTone, StatusBadgeSize } from './types.js';
 
 const props = withDefaults(defineProps<{
   variant: StatusVariant;
   label?: string;
   tone?: StatusTone;
-}>(), {});
+  size?: StatusBadgeSize;
+}>(), { size: 'sm' });
+
+const SIZE_CLASS: Record<StatusBadgeSize, string> = {
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-4 py-1 text-sm font-medium',
+};
 
 interface VariantConfig {
   label: string;
@@ -50,7 +56,7 @@ const resolved = computed<VariantConfig>(() => {
 
 <template>
   <span
-    class="inline-block rounded-full px-2 py-0.5 text-xs"
-    :class="TONE_CLASSES[resolved.tone]"
+    class="inline-block rounded-full"
+    :class="[TONE_CLASSES[resolved.tone], SIZE_CLASS[size]]"
   >{{ resolved.label }}</span>
 </template>

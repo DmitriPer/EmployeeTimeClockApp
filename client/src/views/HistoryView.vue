@@ -7,6 +7,7 @@ import EntryEditModal from '../components/EntryEditModal.vue';
 import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
 import HistoryTable from '../components/data/HistoryTable.vue';
 import AsyncSection from '../components/ui/AsyncSection.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
 import { isCurrentMonthEntry } from '../utils/periodLock.js';
 import { APP_TIMEZONE } from '../config/app.js';
 import { useAsyncData } from '../composables/useAsyncData.js';
@@ -21,10 +22,8 @@ const selectedYear = ref(now.getFullYear());
 const selectedMonthIdx = ref(now.getMonth());
 
 const monthLabel = computed(() =>
-  new Date(selectedYear.value, selectedMonthIdx.value, 1).toLocaleDateString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-  }),
+  new Date(selectedYear.value, selectedMonthIdx.value, 1)
+    .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
 );
 
 function getMonthRange(): { from: string; to: string } {
@@ -44,7 +43,6 @@ function prevMonth(): void {
   else { selectedMonthIdx.value--; }
   loadHistory();
 }
-
 function nextMonth(): void {
   if (selectedMonthIdx.value === 11) { selectedMonthIdx.value = 0; selectedYear.value++; }
   else { selectedMonthIdx.value++; }
@@ -63,7 +61,6 @@ async function loadHistory(): Promise<void> {
 }
 
 const exporting = ref(false);
-
 async function handleExport(format: ExportFormat): Promise<void> {
   exporting.value = true;
   error.value = null;
@@ -122,29 +119,18 @@ function handleModalDeleted(): void {
   <div class="space-y-4">
     <h1 class="text-base font-semibold text-gray-800">My History</h1>
 
-    <!-- Month navigation -->
     <div class="flex items-center gap-3">
       <div class="flex items-center gap-1">
-        <button
-          @click="prevMonth"
-          class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
-        >‹</button>
+        <BaseButton variant="secondary" size="sm" @click="prevMonth">‹</BaseButton>
         <span class="w-36 text-center text-sm font-medium text-gray-700">{{ monthLabel }}</span>
-        <button
-          @click="nextMonth"
-          class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
-        >›</button>
+        <BaseButton variant="secondary" size="sm" @click="nextMonth">›</BaseButton>
       </div>
       <div class="ml-auto flex gap-2">
-        <button
-          v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])"
-          :key="fmt"
-          :disabled="exporting"
+        <BaseButton
+          v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])" :key="fmt"
+          variant="secondary" size="sm" :disabled="exporting" class="uppercase"
           @click="handleExport(fmt)"
-          class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 uppercase"
-        >
-          {{ fmt }}
-        </button>
+        >{{ fmt }}</BaseButton>
       </div>
     </div>
 
