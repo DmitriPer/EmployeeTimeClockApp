@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { ErrorCode, CorrectionRequestSchema, UpdateCorrectionRequestSchema } from '@app/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendCreated, sendEmpty } from '../lib/response.js';
 import * as service from './correction-requests.service.js';
 
 export const correctionRequestsRouter = Router();
@@ -22,7 +23,7 @@ correctionRequestsRouter.post(
         );
       }
       const result = await service.submitCorrectionRequest(req.user!.id, req.user!.role, parsed.data);
-      res.status(201).json({ success: true, data: result });
+      sendCreated(res, result);
     } catch (err) {
       next(err);
     }
@@ -38,7 +39,7 @@ correctionRequestsRouter.get(
         throw new AppError('timeEntryId query param is required.', 400, ErrorCode.VALIDATION_ERROR);
       }
       const result = await service.getCorrectionRequestForEntry(req.user!.id, timeEntryId);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -61,7 +62,7 @@ correctionRequestsRouter.patch(
         );
       }
       const result = await service.updateCorrectionRequest(req.user!.id, id, parsed.data);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -75,7 +76,7 @@ correctionRequestsRouter.delete(
       const id = parseInt(String(req.params.id ?? ''), 10);
       if (isNaN(id)) throw new AppError('Invalid request ID.', 400, ErrorCode.VALIDATION_ERROR);
       await service.deleteCorrectionRequest(req.user!.id, id);
-      res.status(200).json({ success: true, data: null });
+      sendEmpty(res);
     } catch (err) {
       next(err);
     }

@@ -4,6 +4,7 @@ import { UserRole, CorrectionSchema, ErrorCode } from '@app/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRoles } from '../middleware/requireRoles.js';
 import { AppError } from '../lib/errors.js';
+import { sendOk } from '../lib/response.js';
 import * as service from './corrections.service.js';
 
 export const correctionsRouter = Router();
@@ -24,7 +25,7 @@ correctionsRouter.patch(
       }
 
       const result = await service.correctTimeEntry(id, req.user!.id, parsed.data);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -39,7 +40,7 @@ correctionsRouter.get(
       if (isNaN(id)) throw new AppError('Invalid entry ID.', 400, ErrorCode.VALIDATION_ERROR);
 
       const result = await service.getAuditLog(id);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }

@@ -1,9 +1,11 @@
 import { DateTime } from 'luxon';
-import { ErrorCode } from '@app/shared';
+import { ErrorCode, UserRole } from '@app/shared';
 import type { BreakRequest } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { executeReview } from '../lib/reviewWorkflow.js';
 import { db } from '../db/connection.js';
-import { isCurrentMonth } from '../utils/periodLock.js';
+import { isCurrentMonthDate } from '../utils/periodLock.js';
+import { findUserById } from '../users/users.repository.js';
 import * as repo from './retroactive-requests.repository.js';
 
 const TZ = 'Asia/Jerusalem';
@@ -82,7 +84,7 @@ export async function submitRetroactiveRequest(
     throw new AppError('An explanation is required', 400, ErrorCode.VALIDATION_ERROR);
   }
   const isManager = params.requesterRole === 'MANAGER' || params.requesterRole === 'ADMIN';
-  if (!isManager && !isCurrentMonth(params.date)) {
+  if (!isManager && !isCurrentMonthDate(params.date)) {
     throw new AppError(
       'You can only submit retroactive entries for the current month.',
       403,
@@ -200,101 +202,104 @@ export async function getPendingRetroactiveRequests(
 export async function reviewRetroactiveRequest(
   reviewerId: number,
   requestId: number,
+  reviewerRole: string,
   action: 'APPROVED' | 'REJECTED',
   managerNote: string | null,
 ): Promise<{ id: number; status: string; timeEntryId?: number }> {
   const request = await repo.findRetroactiveRequestById(requestId);
-  if (!request) throw new AppError('Retroactive request not found.', 404, ErrorCode.NOT_FOUND);
-  if (request.status !== 'PENDING') {
-    throw new AppError('Request has already been reviewed.', 409, ErrorCode.OT_ALREADY_REVIEWED);
-  }
-  if (request.user_id === reviewerId) {
-    throw new AppError(
-      'You cannot approve your own retroactive entry request.',
-      403,
-      ErrorCode.CANNOT_SELF_APPROVE,
-    );
-  }
 
-  if (action === 'REJECTED') {
-    await repo.rejectRetroactiveRequest(requestId, reviewerId, managerNote);
-    return { id: requestId, status: 'REJECTED' };
-  }
+  return executeReview({
+    request,
+    resourceName: 'Retroactive request',
+    reviewerId,
+    reviewerRole,
+    action,
+    note: managerNote,
+    canReview: async (req) => {
+      if (reviewerRole === UserRole.ADMIN) return true;
+      const employee = await findUserById(req.user_id);
+      return employee?.manager_id === reviewerId;
+    },
+    onReject: async () => {
+      await repo.rejectRetroactiveRequest(requestId, reviewerId, managerNote);
+      return { id: requestId, status: 'REJECTED' };
+    },
+    onApprove: async () => {
+      const r = request!;
+      const breaks: BreakRequest[] = r.breaks_json
+        ? (JSON.parse(r.breaks_json) as BreakRequest[])
+        : [];
 
-  // Approval — create the time entry in a transaction
-  const breaks: BreakRequest[] = request.breaks_json
-    ? (JSON.parse(request.breaks_json) as BreakRequest[])
-    : [];
+      const dateStr = r.requested_date as string;
+      const clockInUtc = toUtcDatetime(dateStr, r.clock_in_time as string);
+      const clockOutUtc = toUtcDatetime(dateStr, r.clock_out_time as string);
+      const grossMinutes = Math.round((clockOutUtc.getTime() - clockInUtc.getTime()) / 60_000);
 
-  const dateStr = request.requested_date as string;
-  const clockInUtc = toUtcDatetime(dateStr, request.clock_in_time as string);
-  const clockOutUtc = toUtcDatetime(dateStr, request.clock_out_time as string);
+      let timeEntryId = 0;
 
-  const grossMinutes = Math.round((clockOutUtc.getTime() - clockInUtc.getTime()) / 60_000);
+      await db.transaction().execute(async (trx) => {
+        const entryResult = await trx
+          .insertInto('time_entries')
+          .values({
+            user_id: r.user_id,
+            clock_in_at: clockInUtc,
+            clock_out_at: clockOutUtc,
+            is_retroactive: 1,
+            employee_note: r.employee_note,
+          })
+          .executeTakeFirstOrThrow();
+        timeEntryId = Number(entryResult.insertId);
 
-  let timeEntryId: number = 0;
+        for (const b of breaks) {
+          const breakStart = toUtcDatetime(dateStr, b.start);
+          const breakEnd = toUtcDatetime(dateStr, b.end);
+          await trx
+            .insertInto('break_events')
+            .values({ time_entry_id: timeEntryId, break_start_at: breakStart, break_end_at: breakEnd })
+            .execute();
+        }
 
-  await db.transaction().execute(async (trx) => {
-    const entryResult = await trx
-      .insertInto('time_entries')
-      .values({
-        user_id: request.user_id,
-        clock_in_at: clockInUtc,
-        clock_out_at: clockOutUtc,
-        is_retroactive: 1,
-        employee_note: request.employee_note,
-      })
-      .executeTakeFirstOrThrow();
-    timeEntryId = Number(entryResult.insertId);
+        await trx
+          .insertInto('audit_log')
+          .values({
+            time_entry_id: timeEntryId,
+            actor_id: reviewerId,
+            target_user_id: r.user_id,
+            field_name: 'retroactive_entry',
+            old_value: 'none',
+            new_value: JSON.stringify({
+              date: dateStr,
+              clockIn: r.clock_in_time,
+              clockOut: r.clock_out_time,
+              breaks,
+            }),
+          })
+          .execute();
 
-    for (const b of breaks) {
-      const breakStart = toUtcDatetime(dateStr, b.start);
-      const breakEnd = toUtcDatetime(dateStr, b.end);
-      await trx
-        .insertInto('break_events')
-        .values({ time_entry_id: timeEntryId, break_start_at: breakStart, break_end_at: breakEnd })
-        .execute();
-    }
+        if (grossMinutes > OVERTIME_THRESHOLD_MINUTES) {
+          await trx
+            .insertInto('overtime_requests')
+            .values({
+              time_entry_id: timeEntryId,
+              user_id: r.user_id,
+              overtime_minutes: grossMinutes - OVERTIME_THRESHOLD_MINUTES,
+              status: 'APPROVED',
+              reviewed_by: reviewerId,
+              reviewed_at: new Date(),
+            })
+            .execute();
+        }
 
-    await trx
-      .insertInto('audit_log')
-      .values({
-        time_entry_id: timeEntryId,
-        actor_id: reviewerId,
-        target_user_id: request.user_id,
-        field_name: 'retroactive_entry',
-        old_value: 'none',
-        new_value: JSON.stringify({
-          date: dateStr,
-          clockIn: request.clock_in_time,
-          clockOut: request.clock_out_time,
-          breaks,
-        }),
-      })
-      .execute();
+        await trx
+          .updateTable('retroactive_entry_requests')
+          .set({ status: 'APPROVED', reviewed_by: reviewerId, reviewed_at: new Date(), manager_note: managerNote })
+          .where('id', '=', requestId)
+          .execute();
+      });
 
-    if (grossMinutes > OVERTIME_THRESHOLD_MINUTES) {
-      await trx
-        .insertInto('overtime_requests')
-        .values({
-          time_entry_id: timeEntryId,
-          user_id: request.user_id,
-          overtime_minutes: grossMinutes - OVERTIME_THRESHOLD_MINUTES,
-          status: 'APPROVED',
-          reviewed_by: reviewerId,
-          reviewed_at: new Date(),
-        })
-        .execute();
-    }
-
-    await trx
-      .updateTable('retroactive_entry_requests')
-      .set({ status: 'APPROVED', reviewed_by: reviewerId, reviewed_at: new Date(), manager_note: managerNote })
-      .where('id', '=', requestId)
-      .execute();
+      return { id: requestId, status: 'APPROVED', timeEntryId };
+    },
   });
-
-  return { id: requestId, status: 'APPROVED', timeEntryId };
 }
 
 function toResult(row: NonNullable<Awaited<ReturnType<typeof repo.findRetroactiveRequestById>>>): RetroactiveRequestResult {
