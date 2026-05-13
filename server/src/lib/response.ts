@@ -13,10 +13,6 @@ export function sendCreated<T>(res: Response, data: T): void {
   res.status(201).json({ success: true, data } satisfies SuccessEnvelope<T>);
 }
 
-export function sendNoContent(res: Response): void {
-  res.status(204).end();
-}
-
 export function sendEmpty(res: Response, status: 200 | 201 = 200): void {
   res.status(status).json({ success: true, data: null });
 }

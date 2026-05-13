@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import { ErrorCode, UserRole } from '@app/shared';
 import type { CorrectionRequestDto, UpdateCorrectionRequestDto, BreakRequest } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { APP_TZ, OVERTIME_THRESHOLD_MINUTES } from '../lib/constants.js';
 import { executeReview } from '../lib/reviewWorkflow.js';
 import { findEntryById } from '../history/history.repository.js';
 import { findUserById } from '../users/users.repository.js';
@@ -10,7 +11,7 @@ import { insertOvertimeRequest } from '../overtime/overtime.repository.js';
 import { db } from '../db/connection.js';
 import * as repo from './correction-requests.repository.js';
 
-const TZ = 'Asia/Jerusalem';
+const TZ = APP_TZ;
 
 export interface CorrectionRequestResult {
   id: number;
@@ -187,8 +188,6 @@ export interface CorrectionRequestRow {
   currentClockOutAt: string | null;
   createdAt: string;
 }
-
-const OVERTIME_THRESHOLD_MINUTES = 9 * 60;
 
 export async function listForManager(
   requesterId: number,

@@ -1,10 +1,11 @@
 import { DateTime } from 'luxon';
 import { ErrorCode, UserRole } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { APP_TZ } from '../lib/constants.js';
 import { asRepoManagerFilter } from '../manager/manager.scope.js';
 import * as repo from './flagged.repository.js';
 
-const TZ = 'Asia/Jerusalem';
+const TZ = APP_TZ;
 
 export interface FlaggedSessionRow {
   timeEntryId: number;

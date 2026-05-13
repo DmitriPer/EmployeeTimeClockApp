@@ -9,6 +9,7 @@ vi.mock('../timeclock.repository.js', () => ({
   findOpenBreak: vi.fn(),
   insertBreakEvent: vi.fn(),
   closeBreakEvent: vi.fn(),
+  endBreakEvent: vi.fn(),
   findBreaksByEntryId: vi.fn(),
   findBreaksByEntryIdTrx: vi.fn(),
   insertOvertimeRequest: vi.fn(),
@@ -18,13 +19,6 @@ vi.mock('../../db/connection.js', () => ({
   db: {
     transaction: vi.fn(() => ({
       execute: vi.fn(async (fn: (trx: unknown) => Promise<unknown>) => fn({})),
-    })),
-    updateTable: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(() => ({
-          execute: vi.fn(),
-        })),
-      })),
     })),
   },
 }));

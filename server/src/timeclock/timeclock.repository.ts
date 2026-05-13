@@ -91,6 +91,14 @@ export async function findBreaksByEntryIdTrx(
     .execute();
 }
 
+export async function endBreakEvent(breakId: number, breakEndAt: Date): Promise<void> {
+  await db
+    .updateTable('break_events')
+    .set({ break_end_at: breakEndAt })
+    .where('id', '=', breakId)
+    .execute();
+}
+
 export async function insertOvertimeRequest(
   trx: Transaction<Database>,
   params: { timeEntryId: number; userId: number; overtimeMinutes: number },

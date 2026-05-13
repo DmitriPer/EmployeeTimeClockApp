@@ -1,12 +1,12 @@
 import { DateTime } from 'luxon';
 import { ErrorCode, UserRole } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { APP_TZ, BREAK_ALLOWANCE_MINUTES } from '../lib/constants.js';
 import { calcPaidHours } from '../utils/timeCalculations.js';
 import * as repo from './history.repository.js';
 import { findCorrectionRequestsByEntryIds } from '../correction-requests/correction-requests.repository.js';
 
-const TZ = 'Asia/Jerusalem';
-const BREAK_ALLOWANCE_MINUTES = 60;
+const TZ = APP_TZ;
 
 export interface BreakRecord {
   id: number;
@@ -38,6 +38,7 @@ export interface HistoryEntry {
   paidMinutes: number | null;
   isAutoClosedBreak: boolean;
   isFlagged: boolean;
+  isBreakReviewed: boolean;
   isCorrected: boolean;
   isRetroactive: boolean;
   employeeNote: string | null;

@@ -4,10 +4,11 @@ import PDFDocument from 'pdfkit';
 import { DateTime } from 'luxon';
 import { UserRole } from '@app/shared';
 import type { ExportQueryDto } from '@app/shared';
+import { APP_TZ } from '../lib/constants.js';
 import { getHistory, type HistoryEntry } from '../history/history.service.js';
 import { findUserById } from '../users/users.repository.js';
 
-const TZ = 'Asia/Jerusalem';
+const TZ = APP_TZ;
 const COMPANY_NAME = 'Company Name';
 const HEADERS = [
   'Date',

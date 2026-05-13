@@ -1,10 +1,8 @@
 import { ClockStatus, ErrorCode } from '@app/shared';
 import { db } from '../db/connection.js';
 import { AppError } from '../lib/errors.js';
+import { BREAK_ALLOWANCE_MINUTES, OVERTIME_THRESHOLD_MINUTES } from '../lib/constants.js';
 import * as repo from './timeclock.repository.js';
-
-const PAID_BREAK_ALLOWANCE_MINUTES = 60;
-const OVERTIME_THRESHOLD_MINUTES = 9 * 60;
 
 export type ClockStatusResult = {
   status: ClockStatus;
@@ -107,7 +105,7 @@ export async function clockOut(userId: number): Promise<ClockOutResult> {
       b.id === openBreak?.id ? { ...b, break_end_at: now } : b,
     );
     const totalBreakMinutes = sumClosedBreakMinutes(allBreaks);
-    const excessBreakMinutes = Math.max(0, totalBreakMinutes - PAID_BREAK_ALLOWANCE_MINUTES);
+    const excessBreakMinutes = Math.max(0, totalBreakMinutes - BREAK_ALLOWANCE_MINUTES);
     const grossMinutes = Math.floor((now.getTime() - session.clock_in_at.getTime()) / 60_000);
     const paidMinutes = grossMinutes - excessBreakMinutes;
 
@@ -182,11 +180,7 @@ export async function endBreak(userId: number): Promise<ClockStatusResult> {
 
   const now = new Date();
 
-  await db
-    .updateTable('break_events')
-    .set({ break_end_at: now })
-    .where('id', '=', openBreak.id)
-    .execute();
+  await repo.endBreakEvent(openBreak.id, now);
 
   const breaks = await repo.findBreaksByEntryId(session.id);
   const totalBreakMinutes = sumClosedBreakMinutes(breaks);

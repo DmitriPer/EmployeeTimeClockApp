@@ -17,6 +17,10 @@ const FlaggedQuerySchema = z.object({
   employeeId: z.coerce.number().int().positive().optional(),
 });
 
+const FlaggedReviewSchema = z.object({
+  breakEndTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+});
+
 export const managerRouter = Router();
 
 managerRouter.use(requireAuth, requireRoles(UserRole.MANAGER, UserRole.ADMIN));
@@ -51,11 +55,9 @@ managerRouter.get('/flagged', asyncHandler(async (req, res) => {
 managerRouter.patch('/flagged/:timeEntryId/review', asyncHandler(async (req, res) => {
   const timeEntryId = parseInt(String(req.params.timeEntryId ?? ''), 10);
   if (isNaN(timeEntryId)) throw new AppError('Invalid entry ID.', 400, ErrorCode.VALIDATION_ERROR);
-  const { breakEndTime } = req.body as { breakEndTime?: unknown };
-  if (!breakEndTime || typeof breakEndTime !== 'string') {
-    throw new AppError('breakEndTime is required.', 400, ErrorCode.VALIDATION_ERROR);
-  }
-  await service.reviewFlaggedSession(req.user!.id, req.user!.role, timeEntryId, breakEndTime);
+  const parsed = FlaggedReviewSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError('breakEndTime is required (HH:MM or HH:MM:SS).', 400, ErrorCode.VALIDATION_ERROR);
+  await service.reviewFlaggedSession(req.user!.id, req.user!.role, timeEntryId, parsed.data.breakEndTime);
   sendEmpty(res);
 }));
 

@@ -2,14 +2,14 @@ import { DateTime } from 'luxon';
 import { ErrorCode, UserRole } from '@app/shared';
 import type { BreakRequest } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { APP_TZ, OVERTIME_THRESHOLD_MINUTES } from '../lib/constants.js';
 import { executeReview } from '../lib/reviewWorkflow.js';
 import { db } from '../db/connection.js';
 import { isCurrentMonthDate } from '../utils/periodLock.js';
 import { findUserById } from '../users/users.repository.js';
 import * as repo from './retroactive-requests.repository.js';
 
-const TZ = 'Asia/Jerusalem';
-const OVERTIME_THRESHOLD_MINUTES = 9 * 60;
+const TZ = APP_TZ;
 
 export interface RetroactiveRequestResult {
   id: number;
@@ -99,14 +99,14 @@ export async function submitRetroactiveRequest(
   }
 
   // Block if entry already exists for that date
-  const clockInUtc = toUtcDatetime(params.date, '00:00');
-  const clockOutUtc = toUtcDatetime(params.date, '23:59');
+  const dayStart = toUtcDatetime(params.date, '00:00');
+  const dayEnd = DateTime.fromISO(params.date, { zone: TZ }).plus({ days: 1 }).toUTC().toJSDate();
   const existingEntry = await db
     .selectFrom('time_entries')
     .select('id')
     .where('user_id', '=', requesterId)
-    .where('clock_in_at', '>=', clockInUtc)
-    .where('clock_in_at', '<=', clockOutUtc)
+    .where('clock_in_at', '>=', dayStart)
+    .where('clock_in_at', '<', dayEnd)
     .executeTakeFirst();
 
   if (existingEntry) {
