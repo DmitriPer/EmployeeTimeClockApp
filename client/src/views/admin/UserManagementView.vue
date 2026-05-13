@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { UserRole } from '@app/shared';
 import { useAuthStore } from '../../stores/auth.js';
 import PasswordInput from '../../components/PasswordInput.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import {
   fetchUsers,
   createUser,
@@ -279,21 +280,11 @@ function getManagerName(managerId: number | null): string {
             <td class="px-4 py-2 text-gray-800">{{ u.name }}</td>
             <td class="px-4 py-2 text-gray-500">{{ u.email }}</td>
             <td class="px-4 py-2">
-              <span class="rounded-full px-2 py-0.5 text-xs"
-                :class="{
-                  'bg-gray-100 text-gray-600': u.role === UserRole.EMPLOYEE,
-                  'bg-blue-100 text-blue-700': u.role === UserRole.MANAGER,
-                  'bg-purple-100 text-purple-700': u.role === UserRole.ADMIN,
-                }">
-                {{ u.role }}
-              </span>
+              <StatusBadge :variant="`role-${u.role.toLowerCase()}` as 'role-employee' | 'role-manager' | 'role-admin'" />
             </td>
             <td class="px-4 py-2 text-sm text-gray-500">{{ getManagerName(u.managerId) }}</td>
             <td class="px-4 py-2">
-              <span class="rounded-full px-2 py-0.5 text-xs"
-                :class="u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'">
-                {{ u.isActive ? 'Active' : 'Inactive' }}
-              </span>
+              <StatusBadge :variant="u.isActive ? 'active' : 'inactive'" />
             </td>
             <td class="px-4 py-2">
               <div class="flex gap-3">

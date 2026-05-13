@@ -6,6 +6,7 @@ import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
 import BreakPopover from '../../components/BreakPopover.vue';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { formatDate, formatTime, formatMinutes } from '../../utils/format.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 
@@ -145,17 +146,14 @@ async function handleExport(format: ExportFormat): Promise<void> {
               />
             </td>
             <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
-            <td class="px-4 py-2">
-              <span v-if="entry.isFlagged" class="mr-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Flagged</span>
-              <span v-if="entry.isBreakReviewed" class="mr-1 inline-block rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-700">Break fixed</span>
-              <span v-if="entry.overtimeRequest" class="inline-block rounded-full px-2 py-0.5 text-xs"
-                :class="{
-                  'bg-yellow-100 text-yellow-700': entry.overtimeRequest.status === 'PENDING',
-                  'bg-green-100 text-green-700': entry.overtimeRequest.status === 'APPROVED',
-                  'bg-red-100 text-red-700': entry.overtimeRequest.status === 'REJECTED',
-                }">
-                OT {{ entry.overtimeRequest.status.toLowerCase() }}
-              </span>
+            <td class="px-4 py-2 space-x-1">
+              <StatusBadge v-if="entry.isFlagged" variant="flagged" />
+              <StatusBadge v-if="entry.isBreakReviewed" variant="break-fixed" />
+              <StatusBadge
+                v-if="entry.overtimeRequest"
+                :variant="entry.overtimeRequest.status === 'APPROVED' ? 'approved' : entry.overtimeRequest.status === 'REJECTED' ? 'rejected' : 'pending'"
+                :label="`OT ${entry.overtimeRequest.status.toLowerCase()}`"
+              />
             </td>
             <td class="px-4 py-2 text-xs text-gray-500">{{ entry.employeeNote || '' }}</td>
           </tr>

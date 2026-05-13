@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { fetchOvertimeQueue, reviewOvertime, type OvertimeRequest } from '../../api/manager.js';
 import { formatDate, formatTime, formatMinutes } from '../../utils/format.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
+import StatusBadge from '../../components/ui/StatusBadge.vue';
 
 const requests = ref<OvertimeRequest[]>([]);
 const { loading, error, run: runLoad } = useAsyncData<OvertimeRequest[]>();
@@ -60,9 +61,7 @@ async function submitReview(id: number, action: 'APPROVED' | 'REJECTED'): Promis
               {{ formatTime(req.clockInAt) }} to {{ req.clockOutAt ? formatTime(req.clockOutAt) : '—' }}
             </p>
           </div>
-          <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-            +{{ formatMinutes(req.overtimeMinutes) }} OT
-          </span>
+          <StatusBadge variant="custom" tone="amber" :label="`+${formatMinutes(req.overtimeMinutes)} OT`" />
         </div>
 
         <!-- Inline review form -->
