@@ -6,6 +6,7 @@ import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
 import HistoryTable from '../../components/data/HistoryTable.vue';
+import AsyncSection from '../../components/ui/AsyncSection.vue';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const authStore = useAuthStore();
@@ -70,10 +71,6 @@ async function handleExport(format: ExportFormat): Promise<void> {
   <div class="space-y-4">
     <h1 class="text-base font-semibold text-gray-800">Employee History</h1>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
-
     <!-- Filters -->
     <div class="flex flex-wrap items-center gap-3">
       <label class="flex items-center gap-2 text-sm text-gray-600">
@@ -108,15 +105,8 @@ async function handleExport(format: ExportFormat): Promise<void> {
       </div>
     </div>
 
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-    <div v-else-if="entries.length === 0" class="text-sm text-gray-400">
-      Select an employee and press Load.
-    </div>
-
-    <HistoryTable
-      v-if="entries.length > 0"
-      :entries="entries"
-      :show-notes="true"
-    />
+    <AsyncSection :loading="loading" :error="error" :empty="entries.length === 0" empty-text="Select an employee and press Load.">
+      <HistoryTable :entries="entries" :show-notes="true" />
+    </AsyncSection>
   </div>
 </template>

@@ -14,6 +14,7 @@ import {
 import TimeInput from './TimeInput.vue';
 import BaseModal from './ui/BaseModal.vue';
 import StatusBadge from './ui/StatusBadge.vue';
+import AsyncSection from './ui/AsyncSection.vue';
 
 const props = defineProps<{ month: string }>();
 
@@ -118,17 +119,8 @@ async function handleCancel(id: number): Promise<void> {
       </button>
     </div>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-      {{ error }}
-    </div>
-
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-
-    <div v-else-if="requests.length === 0" class="text-sm text-gray-400">
-      No retroactive requests for this month.
-    </div>
-
-    <div v-else class="space-y-2">
+    <AsyncSection :loading="loading" :error="error" :empty="requests.length === 0" empty-text="No retroactive requests for this month.">
+    <div class="space-y-2">
       <div
         v-for="req in requests"
         :key="req.id"
@@ -155,6 +147,7 @@ async function handleCancel(id: number): Promise<void> {
         </button>
       </div>
     </div>
+    </AsyncSection>
   </div>
 
   <!-- New Retroactive Entry Modal -->

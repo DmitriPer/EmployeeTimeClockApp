@@ -12,6 +12,7 @@ import { formatDate, formatTime } from '../../utils/format.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 import ReviewCard from '../../components/data/ReviewCard.vue';
+import AsyncSection from '../../components/ui/AsyncSection.vue';
 
 type Tab = 'edits' | 'missed';
 
@@ -93,14 +94,9 @@ function switchTab(tab: Tab): void {
       </button>
     </div>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
-
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-
+    <AsyncSection :loading="loading" :error="error">
     <!-- Entry Edits tab -->
-    <template v-else-if="activeTab === 'edits'">
+    <template v-if="activeTab === 'edits'">
       <div v-if="corrections.length === 0" class="text-sm text-gray-400">No pending edit requests.</div>
       <div v-else class="space-y-3">
         <ReviewCard
@@ -162,5 +158,6 @@ function switchTab(tab: Tab): void {
         </ReviewCard>
       </div>
     </template>
+    </AsyncSection>
   </div>
 </template>

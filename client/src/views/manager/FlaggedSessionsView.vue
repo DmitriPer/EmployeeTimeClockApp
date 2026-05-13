@@ -7,6 +7,7 @@ import StatusBadge from '../../components/ui/StatusBadge.vue';
 import { formatDate, formatTime } from '../../utils/format.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
+import AsyncSection from '../../components/ui/AsyncSection.vue';
 
 const sessions = ref<FlaggedSession[]>([]);
 const { loading, error, run: runLoad } = useAsyncData<FlaggedSession[]>();
@@ -72,17 +73,8 @@ async function submitFix(): Promise<void> {
   <div class="space-y-4">
     <h1 class="text-base font-semibold text-gray-800">Flagged Sessions</h1>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
-
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-
-    <div v-else-if="sessions.length === 0" class="text-sm text-gray-400">
-      No flagged sessions.
-    </div>
-
-    <div v-else class="overflow-x-auto rounded border border-gray-200">
+    <AsyncSection :loading="loading" :error="error" :empty="sessions.length === 0" empty-text="No flagged sessions.">
+    <div class="overflow-x-auto rounded border border-gray-200">
       <table class="min-w-full text-sm">
         <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
           <tr>
@@ -124,6 +116,7 @@ async function submitFix(): Promise<void> {
         </tbody>
       </table>
     </div>
+    </AsyncSection>
   </div>
 
   <!-- Fix Modal -->

@@ -15,6 +15,7 @@ import {
 } from '../../api/users.js';
 import { getApiErrorMessage } from '../../api/utils.js';
 import { useAsyncData } from '../../composables/useAsyncData.js';
+import FormField from '../../components/ui/FormField.vue';
 
 const authStore = useAuthStore();
 
@@ -172,35 +173,29 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'create'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">New User</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Employee ID
-          <input v-model="form.employeeId" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Full Name
-          <input v-model="form.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Email
-          <input v-model="form.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Password
-          <PasswordInput v-model="form.password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Role
-          <select v-model="form.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        <FormField label="Employee ID" v-slot="{ id }">
+          <input :id="id" v-model="form.employeeId" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Full Name" v-slot="{ id }">
+          <input :id="id" v-model="form.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Email" v-slot="{ id }">
+          <input :id="id" v-model="form.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="form.password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
+        <FormField label="Role" v-slot="{ id }">
+          <select :id="id" v-model="form.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Manager
-          <select v-model="form.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        </FormField>
+        <FormField label="Manager" v-slot="{ id }">
+          <select :id="id" v-model="form.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option :value="null">(Unassigned)</option>
             <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
-        </label>
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
         <button @click="submitCreate" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Create</button>
@@ -212,27 +207,23 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'edit'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Edit — {{ editingUser?.name }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Full Name
-          <input v-model="editForm.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Email
-          <input v-model="editForm.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Role
-          <select v-model="editForm.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        <FormField label="Full Name" v-slot="{ id }">
+          <input :id="id" v-model="editForm.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Email" v-slot="{ id }">
+          <input :id="id" v-model="editForm.email" type="email" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
+        </FormField>
+        <FormField label="Role" v-slot="{ id }">
+          <select :id="id" v-model="editForm.role" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Manager
-          <select v-model="editForm.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
+        </FormField>
+        <FormField label="Manager" v-slot="{ id }">
+          <select :id="id" v-model="editForm.managerId" class="rounded border border-gray-300 px-2 py-1.5 text-sm">
             <option :value="null">(Unassigned)</option>
             <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
-        </label>
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
         <button @click="submitEdit" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
@@ -244,14 +235,12 @@ function getManagerName(managerId: number | null): string {
     <div v-if="mode === 'reset'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Reset Password — {{ resettingUser?.name }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          New Password
-          <PasswordInput v-model="resetForm.newPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-gray-600">
-          Confirm Password
-          <PasswordInput v-model="resetForm.confirmPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-        </label>
+        <FormField label="New Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="resetForm.newPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
+        <FormField label="Confirm Password" v-slot="{ id }">
+          <PasswordInput :id="id" v-model="resetForm.confirmPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+        </FormField>
       </div>
       <div class="flex gap-2 pt-1">
         <button @click="submitReset" class="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">Reset</button>

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { changeOwnPassword } from '../api/users.js';
 import { useAuthStore } from '../stores/auth.js';
 import PasswordInput from '../components/PasswordInput.vue';
+import FormField from '../components/ui/FormField.vue';
 import { useAsyncData } from '../composables/useAsyncData.js';
 
 const router = useRouter();
@@ -34,18 +35,15 @@ async function submit(): Promise<void> {
     </div>
 
     <div class="rounded border border-gray-200 bg-white p-5 space-y-3">
-      <label class="flex flex-col gap-1 text-xs text-gray-600">
-        Current Password
-        <PasswordInput v-model="form.currentPassword" autocomplete="current-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-      </label>
-      <label class="flex flex-col gap-1 text-xs text-gray-600">
-        New Password
-        <PasswordInput v-model="form.newPassword" autocomplete="new-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-      </label>
-      <label class="flex flex-col gap-1 text-xs text-gray-600">
-        Confirm New Password
-        <PasswordInput v-model="form.confirmPassword" autocomplete="new-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
-      </label>
+      <FormField label="Current Password" v-slot="{ id }">
+        <PasswordInput :id="id" v-model="form.currentPassword" autocomplete="current-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+      </FormField>
+      <FormField label="New Password" v-slot="{ id }">
+        <PasswordInput :id="id" v-model="form.newPassword" autocomplete="new-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+      </FormField>
+      <FormField label="Confirm New Password" v-slot="{ id }">
+        <PasswordInput :id="id" v-model="form.confirmPassword" autocomplete="new-password" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
+      </FormField>
       <div class="pt-1">
         <button
           @click="submit"

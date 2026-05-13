@@ -6,6 +6,7 @@ import { getCorrectionRequestForEntry, type CorrectionRequestResult } from '../a
 import EntryEditModal from '../components/EntryEditModal.vue';
 import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
 import HistoryTable from '../components/data/HistoryTable.vue';
+import AsyncSection from '../components/ui/AsyncSection.vue';
 import { isCurrentMonthEntry } from '../utils/periodLock.js';
 import { APP_TIMEZONE } from '../config/app.js';
 import { useAsyncData } from '../composables/useAsyncData.js';
@@ -147,23 +148,16 @@ function handleModalDeleted(): void {
       </div>
     </div>
 
-    <div v-if="error" class="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-      {{ error }}
-    </div>
-
-    <div v-if="loading" class="text-sm text-gray-400">Loading…</div>
-
-    <div v-else-if="entries.length === 0" class="text-sm text-gray-400">No entries found.</div>
-
-    <HistoryTable
-      v-else
-      :entries="entries"
-      :show-edit-action="true"
-      :note-editable="true"
-      :editable-entry="(e) => isCurrentMonthEntry(e.clockInAt)"
-      @edit="openEditModal"
-      @save-note="handleSaveNote"
-    />
+    <AsyncSection :loading="loading" :error="error" :empty="entries.length === 0" empty-text="No entries found.">
+      <HistoryTable
+        :entries="entries"
+        :show-edit-action="true"
+        :note-editable="true"
+        :editable-entry="(e) => isCurrentMonthEntry(e.clockInAt)"
+        @edit="openEditModal"
+        @save-note="handleSaveNote"
+      />
+    </AsyncSection>
 
     <hr class="border-gray-200" />
     <RetroactiveRequestsSection :month="`${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, '0')}`" />
