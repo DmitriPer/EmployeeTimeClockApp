@@ -43,7 +43,7 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <div class="flex min-h-screen items-center justify-center bg-gray-50">
-    <div class="w-full max-w-sm rounded-lg bg-white p-8 shadow">
+    <div class="w-full max-w-sm rounded-lg bg-white p-4 shadow sm:p-8">
       <h1 class="mb-6 text-center text-2xl font-semibold text-gray-800">
         Employee Time Clock
       </h1>

@@ -167,7 +167,7 @@ function getManagerName(managerId: number | null): string {
     <!-- Create form -->
     <div v-if="mode === 'create'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">New User</h2>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Employee ID" v-slot="{ id }">
           <input :id="id" v-model="form.employeeId" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
         </FormField>
@@ -201,7 +201,7 @@ function getManagerName(managerId: number | null): string {
     <!-- Edit form -->
     <div v-if="mode === 'edit'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Edit — {{ editingUser?.name }}</h2>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Full Name" v-slot="{ id }">
           <input :id="id" v-model="editForm.name" type="text" class="rounded border border-gray-300 px-2 py-1.5 text-sm" />
         </FormField>
@@ -229,7 +229,7 @@ function getManagerName(managerId: number | null): string {
     <!-- Reset password form -->
     <div v-if="mode === 'reset'" class="rounded border border-gray-200 bg-white p-5 space-y-3">
       <h2 class="text-sm font-medium text-gray-700">Reset Password — {{ resettingUser?.name }}</h2>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="New Password" v-slot="{ id }">
           <PasswordInput :id="id" v-model="resetForm.newPassword" input-class="w-full rounded border border-gray-300 px-2 py-1.5 pr-10 text-sm" />
         </FormField>
@@ -243,49 +243,79 @@ function getManagerName(managerId: number | null): string {
       </div>
     </div>
 
-    <!-- Users table -->
-    <div v-if="mode === 'list'" class="overflow-x-auto rounded border border-gray-200">
+    <!-- Users list -->
+    <template v-if="mode === 'list'">
       <div v-if="loading" class="p-4 text-sm text-gray-400">Loading…</div>
-      <table v-else class="min-w-full text-sm">
-        <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-          <tr>
-            <th class="px-4 py-2">Employee ID</th>
-            <th class="px-4 py-2">Name</th>
-            <th class="px-4 py-2">Email</th>
-            <th class="px-4 py-2">Role</th>
-            <th class="px-4 py-2">Manager</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 bg-white">
-          <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50">
-            <td class="px-4 py-2 font-mono text-xs text-gray-700">{{ u.employeeId }}</td>
-            <td class="px-4 py-2 text-gray-800">{{ u.name }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ u.email }}</td>
-            <td class="px-4 py-2">
-              <StatusBadge :variant="`role-${u.role.toLowerCase()}` as 'role-employee' | 'role-manager' | 'role-admin'" />
-            </td>
-            <td class="px-4 py-2 text-sm text-gray-500">{{ getManagerName(u.managerId) }}</td>
-            <td class="px-4 py-2">
-              <StatusBadge :variant="u.isActive ? 'active' : 'inactive'" />
-            </td>
-            <td class="px-4 py-2">
-              <div class="flex gap-3">
-                <button @click="startEdit(u)" class="text-xs text-blue-600 hover:underline">Edit</button>
-                <button v-if="u.id !== authStore.user?.id" @click="startReset(u)" class="text-xs text-gray-500 hover:underline">Reset pwd</button>
-                <button
-                  v-if="u.isActive"
-                  @click="handleDeactivate(u)"
-                  class="text-xs text-red-500 hover:underline"
-                >
-                  Deactivate
-                </button>
+      <template v-else>
+        <!-- Mobile cards -->
+        <div class="md:hidden space-y-2">
+          <article
+            v-for="u in users"
+            :key="u.id"
+            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+          >
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-medium text-gray-900">{{ u.name }}</p>
+                <p class="text-xs text-gray-500">{{ u.employeeId }} · {{ u.email }}</p>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <div class="flex flex-col items-end gap-1">
+                <StatusBadge :variant="`role-${u.role.toLowerCase()}` as 'role-employee' | 'role-manager' | 'role-admin'" />
+                <StatusBadge :variant="u.isActive ? 'active' : 'inactive'" />
+              </div>
+            </header>
+            <p v-if="u.managerId" class="mt-1 text-xs text-gray-400">Manager: {{ getManagerName(u.managerId) }}</p>
+            <footer class="mt-3 flex flex-wrap gap-2">
+              <BaseButton size="sm" variant="primary" @click="startEdit(u)">Edit</BaseButton>
+              <BaseButton v-if="u.id !== authStore.user?.id" size="sm" variant="secondary" @click="startReset(u)">Reset PW</BaseButton>
+              <BaseButton v-if="u.isActive" size="sm" variant="danger" @click="handleDeactivate(u)">Deactivate</BaseButton>
+            </footer>
+          </article>
+        </div>
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto rounded border border-gray-200">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <tr>
+                <th class="px-4 py-2">Employee ID</th>
+                <th class="px-4 py-2">Name</th>
+                <th class="px-4 py-2">Email</th>
+                <th class="px-4 py-2">Role</th>
+                <th class="px-4 py-2">Manager</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50">
+                <td class="px-4 py-2 font-mono text-xs text-gray-700">{{ u.employeeId }}</td>
+                <td class="px-4 py-2 text-gray-800">{{ u.name }}</td>
+                <td class="px-4 py-2 text-gray-500">{{ u.email }}</td>
+                <td class="px-4 py-2">
+                  <StatusBadge :variant="`role-${u.role.toLowerCase()}` as 'role-employee' | 'role-manager' | 'role-admin'" />
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-500">{{ getManagerName(u.managerId) }}</td>
+                <td class="px-4 py-2">
+                  <StatusBadge :variant="u.isActive ? 'active' : 'inactive'" />
+                </td>
+                <td class="px-4 py-2">
+                  <div class="flex gap-3">
+                    <button @click="startEdit(u)" class="text-xs text-blue-600 hover:underline">Edit</button>
+                    <button v-if="u.id !== authStore.user?.id" @click="startReset(u)" class="text-xs text-gray-500 hover:underline">Reset pwd</button>
+                    <button
+                      v-if="u.isActive"
+                      @click="handleDeactivate(u)"
+                      class="text-xs text-red-500 hover:underline"
+                    >
+                      Deactivate
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </template>
   </div>
 </template>

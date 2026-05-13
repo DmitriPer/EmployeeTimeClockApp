@@ -119,13 +119,13 @@ function handleModalDeleted(): void {
   <div class="space-y-4">
     <h1 class="text-base font-semibold text-gray-800">My History</h1>
 
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
       <div class="flex items-center gap-1">
         <BaseButton variant="secondary" size="sm" @click="prevMonth">‹</BaseButton>
         <span class="w-36 text-center text-sm font-medium text-gray-700">{{ monthLabel }}</span>
         <BaseButton variant="secondary" size="sm" @click="nextMonth">›</BaseButton>
       </div>
-      <div class="ml-auto flex gap-2">
+      <div class="ml-auto flex flex-wrap gap-2">
         <BaseButton
           v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])" :key="fmt"
           variant="secondary" size="sm" :disabled="exporting" class="uppercase"

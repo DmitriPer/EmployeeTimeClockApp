@@ -51,7 +51,93 @@ function otVariant(status: string): 'pending' | 'approved' | 'rejected' {
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded border border-gray-200">
+  <!-- Mobile card list (< md) -->
+  <div class="md:hidden space-y-2">
+    <article
+      v-for="entry in entries"
+      :key="entry.id"
+      class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+    >
+      <header class="flex items-start justify-between gap-2">
+        <div>
+          <p class="text-sm font-medium text-gray-900">{{ formatDate(entry.clockInAt) }}</p>
+          <p v-if="showEmployee" class="text-xs text-gray-500">—</p>
+        </div>
+        <div class="flex flex-wrap justify-end gap-1">
+          <StatusBadge v-if="entry.isRetroactive"   variant="retroactive"  />
+          <StatusBadge v-if="entry.isCorrected"     variant="corrected"    />
+          <StatusBadge v-if="entry.isFlagged"       variant="flagged"      />
+          <StatusBadge v-if="entry.isBreakReviewed" variant="break-fixed"  />
+          <StatusBadge
+            v-if="entry.overtimeRequest"
+            :variant="otVariant(entry.overtimeRequest.status)"
+            :label="`OT ${entry.overtimeRequest.status.toLowerCase()}`"
+          />
+        </div>
+      </header>
+      <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        <dt class="text-gray-500">In</dt>
+        <dd class="text-right text-gray-800">{{ formatTime(entry.clockInAt) }}</dd>
+        <dt class="text-gray-500">Out</dt>
+        <dd class="text-right text-gray-800">{{ entry.clockOutAt ? formatTime(entry.clockOutAt) : '—' }}</dd>
+        <dt class="text-gray-500">Gross</dt>
+        <dd class="text-right text-gray-800">{{ formatMinutes(entry.grossMinutes) }}</dd>
+        <dt class="text-gray-500">Paid</dt>
+        <dd class="text-right text-gray-800">{{ formatMinutes(entry.paidMinutes) }}</dd>
+        <dt class="text-gray-500">Break</dt>
+        <dd class="text-right text-gray-800">
+          <BreakPopover
+            :breaks="entry.breaks"
+            :total-minutes="entry.totalBreakMinutes"
+            :excess-minutes="entry.excessBreakMinutes"
+            :is-auto-closed-break="entry.isAutoClosedBreak && !entry.isBreakReviewed"
+          />
+        </dd>
+      </dl>
+      <details v-if="showNotes" class="mt-3 text-xs">
+        <summary class="cursor-pointer text-gray-500">Notes</summary>
+        <template v-if="noteEditable && editingNoteId === entry.id">
+          <textarea
+            v-model="noteDraft"
+            rows="2"
+            class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs"
+          />
+          <div class="mt-1 flex gap-1">
+            <BaseButton size="sm" variant="primary" @click="commitNote(entry)">Save</BaseButton>
+            <BaseButton size="sm" variant="ghost"   @click="cancelNote">Cancel</BaseButton>
+          </div>
+        </template>
+        <template v-else>
+          <p class="mt-1 text-gray-700">{{ entry.employeeNote || '—' }}</p>
+          <button
+            v-if="noteEditable"
+            class="mt-1 text-blue-600 hover:underline"
+            @click="startEditingNote(entry)"
+          >Edit</button>
+        </template>
+      </details>
+      <div v-if="entry.pendingCorrection?.status === 'PENDING'" class="mt-3 rounded bg-amber-50 px-2 py-1 text-xs text-amber-700">
+        Pending: {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
+        {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
+      </div>
+      <div v-if="entry.pendingCorrection?.status === 'REJECTED'" class="mt-3 rounded bg-red-50 px-2 py-1 text-xs text-red-700">
+        Rejected: {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
+        {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
+      </div>
+      <div v-if="showEditAction && entry.clockOutAt && editableEntry(entry)" class="mt-3 flex justify-end">
+        <BaseButton
+          size="sm"
+          :variant="entry.pendingCorrection?.status === 'PENDING' ? 'secondary' : 'primary'"
+          @click="emit('edit', entry)"
+        >
+          {{ entry.pendingCorrection?.status === 'PENDING' ? 'Pending Edit' : 'Request Edit' }}
+        </BaseButton>
+      </div>
+    </article>
+  </div>
+
+  <!-- Desktop table (≥ md) -->
+  <div class="hidden md:block overflow-x-auto rounded border border-gray-200">
     <table class="min-w-full text-sm">
       <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
         <tr>

@@ -35,15 +35,21 @@ function onClickOutside(e: MouseEvent): void {
   }
 }
 
-onMounted(() => document.addEventListener('mousedown', onClickOutside));
-onUnmounted(() => document.removeEventListener('mousedown', onClickOutside));
+onMounted(() => {
+  document.addEventListener('mousedown', onClickOutside);
+  document.addEventListener('touchstart', onClickOutside as EventListener);
+});
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onClickOutside);
+  document.removeEventListener('touchstart', onClickOutside as EventListener);
+});
 </script>
 
 <template>
   <div ref="triggerRef" class="inline-block">
     <button
       @click="toggle"
-      class="rounded px-1 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-400"
+      class="rounded px-1 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[40px] min-w-[40px] md:min-h-0 md:min-w-0"
       :class="isAutoClosedBreak || excessMinutes > 0 ? 'text-amber-600 font-medium' : 'text-gray-700'"
       :aria-expanded="open"
       aria-haspopup="true"
@@ -58,7 +64,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside));
         v-if="open"
         role="dialog"
         aria-label="Break details"
-        class="fixed z-50 min-w-[220px] rounded-lg border border-gray-200 bg-white shadow-lg"
+        class="fixed z-50 min-w-[220px] max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white shadow-lg"
         :style="popoverStyle"
       >
         <div class="px-3 py-2 border-b border-gray-100">
