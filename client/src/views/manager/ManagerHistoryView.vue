@@ -5,9 +5,7 @@ import { fetchHistory, type HistoryEntry } from '../../api/history.js';
 import { fetchUsers, type UserSummary } from '../../api/users.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { downloadExport, type ExportFormat } from '../../api/export.js';
-import BreakPopover from '../../components/BreakPopover.vue';
-import StatusBadge from '../../components/ui/StatusBadge.vue';
-import { formatDate, formatTime, formatMinutes } from '../../utils/format.js';
+import HistoryTable from '../../components/data/HistoryTable.vue';
 import { useAsyncData } from '../../composables/useAsyncData.js';
 
 const authStore = useAuthStore();
@@ -66,7 +64,6 @@ async function handleExport(format: ExportFormat): Promise<void> {
     exporting.value = false;
   }
 }
-
 </script>
 
 <template>
@@ -116,49 +113,10 @@ async function handleExport(format: ExportFormat): Promise<void> {
       Select an employee and press Load.
     </div>
 
-    <!-- Table -->
-    <div v-if="entries.length > 0" class="overflow-x-auto rounded border border-gray-200">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-          <tr>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Clocked In</th>
-            <th class="px-4 py-2">Clocked Out</th>
-            <th class="px-4 py-2">Total Work Time</th>
-            <th class="px-4 py-2">Total Break Time</th>
-            <th class="px-4 py-2">Net Work Time</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Notes</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 bg-white">
-          <tr v-for="entry in entries" :key="entry.id" class="hover:bg-gray-50">
-            <td class="px-4 py-2 text-gray-700">{{ formatDate(entry.clockInAt) }}</td>
-            <td class="px-4 py-2 text-gray-700">{{ formatTime(entry.clockInAt) }}</td>
-            <td class="px-4 py-2 text-gray-500">{{ entry.clockOutAt ? formatTime(entry.clockOutAt) : '—' }}</td>
-            <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.grossMinutes) }}</td>
-            <td class="px-4 py-2">
-              <BreakPopover
-                :breaks="entry.breaks"
-                :total-minutes="entry.totalBreakMinutes"
-                :excess-minutes="entry.excessBreakMinutes"
-                :is-auto-closed-break="entry.isAutoClosedBreak"
-              />
-            </td>
-            <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
-            <td class="px-4 py-2 space-x-1">
-              <StatusBadge v-if="entry.isFlagged" variant="flagged" />
-              <StatusBadge v-if="entry.isBreakReviewed" variant="break-fixed" />
-              <StatusBadge
-                v-if="entry.overtimeRequest"
-                :variant="entry.overtimeRequest.status === 'APPROVED' ? 'approved' : entry.overtimeRequest.status === 'REJECTED' ? 'rejected' : 'pending'"
-                :label="`OT ${entry.overtimeRequest.status.toLowerCase()}`"
-              />
-            </td>
-            <td class="px-4 py-2 text-xs text-gray-500">{{ entry.employeeNote || '' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <HistoryTable
+      v-if="entries.length > 0"
+      :entries="entries"
+      :show-notes="true"
+    />
   </div>
 </template>

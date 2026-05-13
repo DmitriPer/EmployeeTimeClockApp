@@ -4,24 +4,20 @@ import { fetchHistory, updateNote, type HistoryEntry } from '../api/history.js';
 import { downloadExport, type ExportFormat } from '../api/export.js';
 import { getCorrectionRequestForEntry, type CorrectionRequestResult } from '../api/correctionRequests.js';
 import EntryEditModal from '../components/EntryEditModal.vue';
-import BreakPopover from '../components/BreakPopover.vue';
 import RetroactiveRequestsSection from '../components/RetroactiveRequestsSection.vue';
+import HistoryTable from '../components/data/HistoryTable.vue';
 import { isCurrentMonthEntry } from '../utils/periodLock.js';
-import { formatDate, formatTime, formatMinutes } from '../utils/format.js';
 import { APP_TIMEZONE } from '../config/app.js';
 import { useAsyncData } from '../composables/useAsyncData.js';
-import StatusBadge from '../components/ui/StatusBadge.vue';
 
 const entries = ref<HistoryEntry[]>([]);
 const { loading, error, run: runHistory } = useAsyncData<HistoryEntry[]>();
-const editingNoteId = ref<number | null>(null);
-const noteInput = ref('');
 const modalEntry = ref<HistoryEntry | null>(null);
 const modalExisting = ref<CorrectionRequestResult | null>(null);
 
 const now = new Date();
 const selectedYear = ref(now.getFullYear());
-const selectedMonthIdx = ref(now.getMonth()); // 0-indexed
+const selectedMonthIdx = ref(now.getMonth());
 
 const monthLabel = computed(() =>
   new Date(selectedYear.value, selectedMonthIdx.value, 1).toLocaleDateString('en-GB', {
@@ -54,7 +50,6 @@ function nextMonth(): void {
   loadHistory();
 }
 
-
 onMounted(() => loadHistory());
 
 async function loadHistory(): Promise<void> {
@@ -64,12 +59,6 @@ async function loadHistory(): Promise<void> {
     'Failed to load history.',
   );
   if (result !== null) entries.value = result;
-}
-
-
-function startEditNote(entry: HistoryEntry): void {
-  editingNoteId.value = entry.id;
-  noteInput.value = entry.employeeNote ?? '';
 }
 
 const exporting = ref(false);
@@ -87,11 +76,10 @@ async function handleExport(format: ExportFormat): Promise<void> {
   }
 }
 
-async function saveNote(entry: HistoryEntry): Promise<void> {
+async function handleSaveNote(entry: HistoryEntry, note: string): Promise<void> {
   try {
-    await updateNote(entry.id, noteInput.value || null);
-    entry.employeeNote = noteInput.value || null;
-    editingNoteId.value = null;
+    await updateNote(entry.id, note || null);
+    entry.employeeNote = note || null;
   } catch {
     error.value = 'Failed to save note.';
   }
@@ -167,113 +155,19 @@ function handleModalDeleted(): void {
 
     <div v-else-if="entries.length === 0" class="text-sm text-gray-400">No entries found.</div>
 
-    <!-- Table -->
-    <div v-else class="overflow-x-auto rounded border border-gray-200">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-          <tr>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Clocked In</th>
-            <th class="px-4 py-2">Clocked Out</th>
-            <th class="px-4 py-2">Total Work Time</th>
-            <th class="px-4 py-2">Total Break Time</th>
-            <th class="px-4 py-2">Net Work Time</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Notes</th>
-            <th class="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 bg-white">
-          <template v-for="entry in entries" :key="entry.id">
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-2 text-gray-700">{{ formatDate(entry.clockInAt) }}</td>
-              <td class="px-4 py-2 text-gray-700">{{ formatTime(entry.clockInAt) }}</td>
-              <td class="px-4 py-2 text-gray-500">{{ entry.clockOutAt ? formatTime(entry.clockOutAt) : '—' }}</td>
-              <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.grossMinutes) }}</td>
-              <td class="px-4 py-2">
-                <BreakPopover
-                  :breaks="entry.breaks"
-                  :total-minutes="entry.totalBreakMinutes"
-                  :excess-minutes="entry.excessBreakMinutes"
-                  :is-auto-closed-break="entry.isAutoClosedBreak"
-                />
-              </td>
-              <td class="px-4 py-2 text-gray-700">{{ formatMinutes(entry.paidMinutes) }}</td>
-              <td class="px-4 py-2 space-x-1">
-                <StatusBadge v-if="entry.isRetroactive" variant="retroactive" />
-                <StatusBadge v-if="entry.isCorrected" variant="corrected" />
-                <StatusBadge v-if="entry.isFlagged" variant="flagged" />
-                <StatusBadge v-if="entry.isBreakReviewed" variant="break-fixed" />
-                <StatusBadge
-                  v-if="entry.overtimeRequest"
-                  :variant="entry.overtimeRequest.status === 'APPROVED' ? 'approved' : entry.overtimeRequest.status === 'REJECTED' ? 'rejected' : 'pending'"
-                  :label="`OT ${entry.overtimeRequest.status.toLowerCase()}`"
-                />
-              </td>
-              <td class="px-4 py-2">
-                <template v-if="editingNoteId === entry.id">
-                  <input
-                    v-model="noteInput"
-                    type="text"
-                    maxlength="1000"
-                    class="w-full rounded border border-gray-300 px-2 py-0.5 text-xs"
-                    @keyup.enter="saveNote(entry)"
-                    @keyup.escape="editingNoteId = null"
-                  />
-                  <div class="mt-1 flex gap-2">
-                    <button @click="saveNote(entry)" class="text-xs text-blue-600 hover:underline">Save</button>
-                    <button @click="editingNoteId = null" class="text-xs text-gray-400 hover:underline">Cancel</button>
-                  </div>
-                </template>
-                <template v-else>
-                  <span class="text-xs text-gray-500">{{ entry.employeeNote || '' }}</span>
-                  <button @click="startEditNote(entry)" class="ml-1 text-xs text-gray-400 hover:text-blue-600">
-                    {{ entry.employeeNote ? 'Edit' : 'Add note' }}
-                  </button>
-                </template>
-              </td>
-              <td class="px-4 py-2 text-right">
-                <button
-                  v-if="entry.clockOutAt && isCurrentMonthEntry(entry.clockInAt)"
-                  @click="openEditModal(entry)"
-                  class="text-xs"
-                  :class="entry.pendingCorrection?.status === 'PENDING'
-                    ? 'text-amber-600 hover:text-amber-800'
-                    : 'text-blue-600 hover:text-blue-800'"
-                >
-                  {{ entry.pendingCorrection?.status === 'PENDING' ? 'Pending Edit' : 'Request Edit' }}
-                </button>
-              </td>
-            </tr>
-            <!-- Pending correction note -->
-            <tr v-if="entry.pendingCorrection?.status === 'PENDING'" :key="`cr-${entry.id}`" class="bg-amber-50">
-              <td colspan="9" class="px-4 py-1.5 text-xs text-amber-700">
-                Edit requested:
-                {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
-                {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
-                &mdash; "{{ entry.pendingCorrection.employeeNote }}"
-              </td>
-            </tr>
-            <!-- Rejected correction note -->
-            <tr v-if="entry.pendingCorrection?.status === 'REJECTED'" :key="`cr-rej-${entry.id}`" class="bg-red-50">
-              <td colspan="9" class="px-4 py-1.5 text-xs text-red-700">
-                Edit rejected:
-                {{ formatTime(entry.pendingCorrection.requestedClockInAt) }} —
-                {{ entry.pendingCorrection.requestedClockOutAt ? formatTime(entry.pendingCorrection.requestedClockOutAt) : '—' }}
-                &mdash; "{{ entry.pendingCorrection.employeeNote }}"
-                <span v-if="entry.pendingCorrection.managerNote"> &mdash; Manager: "{{ entry.pendingCorrection.managerNote }}"</span>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+    <HistoryTable
+      v-else
+      :entries="entries"
+      :show-edit-action="true"
+      :note-editable="true"
+      :editable-entry="(e) => isCurrentMonthEntry(e.clockInAt)"
+      @edit="openEditModal"
+      @save-note="handleSaveNote"
+    />
 
-    <!-- Retroactive entry requests -->
     <hr class="border-gray-200" />
     <RetroactiveRequestsSection :month="`${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, '0')}`" />
 
-    <!-- Edit modal -->
     <EntryEditModal
       v-if="modalEntry"
       :entry="modalEntry"
