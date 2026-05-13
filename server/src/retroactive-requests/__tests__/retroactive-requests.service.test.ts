@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ErrorCode } from '@app/shared';
+import { ErrorCode, UserRole } from '@app/shared';
 import {
   submitRetroactiveRequest,
   deleteRetroactiveRequest,
@@ -19,6 +19,10 @@ vi.mock('../retroactive-requests.repository.js', () => ({
 vi.mock('../../utils/periodLock.js', () => ({
   isCurrentMonth: vi.fn(),
   isCurrentMonthDate: vi.fn(),
+}));
+
+vi.mock('../../users/users.repository.js', () => ({
+  findUserById: vi.fn(),
 }));
 
 const mockDbExecuteTakeFirst = vi.hoisted(() => vi.fn());
@@ -53,6 +57,7 @@ vi.mock('../../db/connection.js', () => ({
 
 import * as repo from '../retroactive-requests.repository.js';
 import * as periodLock from '../../utils/periodLock.js';
+import * as usersRepo from '../../users/users.repository.js';
 
 const NOW = new Date('2024-06-15T10:00:00.000Z');
 
@@ -72,6 +77,7 @@ const pendingRow = {
 };
 
 const approvedRow = { ...pendingRow, status: 'APPROVED' as const };
+const rejectedRow = { ...pendingRow, status: 'REJECTED' as const };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -199,15 +205,23 @@ describe('reviewRetroactiveRequest', () => {
   it('throws NOT_FOUND when request does not exist', async () => {
     vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(undefined);
 
-    await expect(reviewRetroactiveRequest(5, 1, 'APPROVED', null)).rejects.toMatchObject({
+    await expect(reviewRetroactiveRequest(5, 1, UserRole.ADMIN, 'APPROVED', null)).rejects.toMatchObject({
       code: ErrorCode.NOT_FOUND,
     });
   });
 
-  it('throws OT_ALREADY_REVIEWED when request is not PENDING', async () => {
+  it('throws OT_ALREADY_REVIEWED when request is APPROVED', async () => {
     vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(approvedRow);
 
-    await expect(reviewRetroactiveRequest(5, 1, 'APPROVED', null)).rejects.toMatchObject({
+    await expect(reviewRetroactiveRequest(5, 1, UserRole.ADMIN, 'APPROVED', null)).rejects.toMatchObject({
+      code: ErrorCode.OT_ALREADY_REVIEWED,
+    });
+  });
+
+  it('throws OT_ALREADY_REVIEWED when request is REJECTED', async () => {
+    vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(rejectedRow);
+
+    await expect(reviewRetroactiveRequest(5, 1, UserRole.ADMIN, 'APPROVED', null)).rejects.toMatchObject({
       code: ErrorCode.OT_ALREADY_REVIEWED,
     });
   });
@@ -215,8 +229,22 @@ describe('reviewRetroactiveRequest', () => {
   it('throws CANNOT_SELF_APPROVE when reviewer is the requester', async () => {
     vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(pendingRow);
 
-    await expect(reviewRetroactiveRequest(10, 1, 'APPROVED', null)).rejects.toMatchObject({
+    await expect(reviewRetroactiveRequest(10, 1, UserRole.ADMIN, 'APPROVED', null)).rejects.toMatchObject({
       code: ErrorCode.CANNOT_SELF_APPROVE,
+    });
+  });
+
+  it('throws FORBIDDEN when MANAGER reviews request not assigned to them', async () => {
+    vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(pendingRow); // user_id: 10
+    vi.mocked(usersRepo.findUserById).mockResolvedValue({
+      id: 10, employee_id: 'EMP010', name: 'Dana', email: 'd@co.com',
+      password_hash: 'h', role: 'EMPLOYEE' as const, is_active: 1,
+      manager_id: 99, created_at: NOW, updated_at: NOW,
+    });
+
+    await expect(reviewRetroactiveRequest(5, 1, UserRole.MANAGER, 'APPROVED', null)).rejects.toMatchObject({
+      code: ErrorCode.FORBIDDEN,
+      statusCode: 403,
     });
   });
 
@@ -224,7 +252,7 @@ describe('reviewRetroactiveRequest', () => {
     vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(pendingRow);
     vi.mocked(repo.rejectRetroactiveRequest).mockResolvedValue(undefined);
 
-    const result = await reviewRetroactiveRequest(5, 1, 'REJECTED', 'Not enough detail');
+    const result = await reviewRetroactiveRequest(5, 1, UserRole.ADMIN, 'REJECTED', 'Not enough detail');
 
     expect(repo.rejectRetroactiveRequest).toHaveBeenCalledWith(1, 5, 'Not enough detail');
     expect(result).toMatchObject({ id: 1, status: 'REJECTED' });
@@ -234,7 +262,7 @@ describe('reviewRetroactiveRequest', () => {
   it('approves the request and returns timeEntryId from transaction', async () => {
     vi.mocked(repo.findRetroactiveRequestById).mockResolvedValue(pendingRow);
 
-    const result = await reviewRetroactiveRequest(5, 1, 'APPROVED', null);
+    const result = await reviewRetroactiveRequest(5, 1, UserRole.ADMIN, 'APPROVED', null);
 
     expect(result).toMatchObject({ id: 1, status: 'APPROVED', timeEntryId: 99 });
   });

@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import { ErrorCode, UserRole } from '@app/shared';
 import type { CorrectionRequestDto, UpdateCorrectionRequestDto, BreakRequest } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { executeReview } from '../lib/reviewWorkflow.js';
 import { findEntryById } from '../history/history.repository.js';
 import { findUserById } from '../users/users.repository.js';
 import { isCurrentMonthEntry } from '../utils/periodLock.js';
@@ -221,82 +222,77 @@ export async function reviewForManager(params: {
   note: string | null;
 }): Promise<void> {
   const request = await repo.findCorrectionRequestById(params.requestId);
-  if (!request) throw new AppError('Correction request not found.', 404, ErrorCode.NOT_FOUND);
-  if (request.status !== 'PENDING') {
-    throw new AppError('This request has already been reviewed.', 409, ErrorCode.OT_ALREADY_REVIEWED);
-  }
-  if (request.user_id === params.reviewerId) {
-    throw new AppError('Cannot review your own request.', 403, ErrorCode.CANNOT_SELF_APPROVE);
-  }
 
-  if (params.reviewerRole === UserRole.MANAGER) {
-    const employee = await findUserById(request.user_id);
-    const isOwnEmployee = employee?.manager_id === params.reviewerId;
-    const isManagerOrAdmin =
-      employee?.role === UserRole.MANAGER || employee?.role === UserRole.ADMIN;
-    if (!isOwnEmployee && !isManagerOrAdmin) {
-      throw new AppError(
-        'This request does not belong to one of your employees.',
-        403,
-        ErrorCode.FORBIDDEN,
-      );
-    }
-  }
+  await executeReview({
+    request,
+    resourceName: 'Correction request',
+    reviewerId: params.reviewerId,
+    reviewerRole: params.reviewerRole,
+    action: params.action,
+    note: params.note,
+    canReview: async (req) => {
+      if (params.reviewerRole === UserRole.ADMIN) return true;
+      const employee = await findUserById(req.user_id);
+      const isOwnEmployee = employee?.manager_id === params.reviewerId;
+      const isManagerOrAdmin =
+        employee?.role === UserRole.MANAGER || employee?.role === UserRole.ADMIN;
+      return isOwnEmployee || isManagerOrAdmin;
+    },
+    onReject: async (req) => {
+      await repo.rejectCorrection(req.id, params.reviewerId, params.note);
+    },
+    onApprove: async () => {
+      const r = request!;
+      const entry = await findEntryById(r.time_entry_id);
+      if (!entry) throw new AppError('Time entry not found.', 404, ErrorCode.NOT_FOUND);
 
-  if (params.action === 'REJECTED') {
-    await repo.rejectCorrection(params.requestId, params.reviewerId, params.note);
-    return;
-  }
-
-  const entry = await findEntryById(request.time_entry_id);
-  if (!entry) throw new AppError('Time entry not found.', 404, ErrorCode.NOT_FOUND);
-
-  const breaks: Array<{ break_start_at: Date; break_end_at: Date }> = [];
-  if (request.requested_breaks_json) {
-    const raw = JSON.parse(request.requested_breaks_json) as BreakRequest[];
-    for (const b of raw) {
-      breaks.push({
-        break_start_at: parseTimeOnDate(request.requested_clock_in_at, b.start),
-        break_end_at: parseTimeOnDate(request.requested_clock_in_at, b.end),
-      });
-    }
-  }
-
-  const oldState = JSON.stringify({
-    clockIn: entry.clock_in_at.toISOString(),
-    clockOut: entry.clock_out_at?.toISOString() ?? null,
-  });
-  const newState = JSON.stringify({
-    clockIn: request.requested_clock_in_at.toISOString(),
-    clockOut: request.requested_clock_out_at?.toISOString() ?? null,
-  });
-
-  await db.transaction().execute(async (trx) => {
-    await repo.approveCorrection(trx, {
-      correctionRequestId: params.requestId,
-      timeEntryId: request.time_entry_id,
-      targetUserId: request.user_id,
-      actorId: params.reviewerId,
-      newClockIn: request.requested_clock_in_at,
-      newClockOut: request.requested_clock_out_at ?? null,
-      breaks,
-      oldState,
-      newState,
-      reviewerNote: params.note,
-    });
-
-    if (request.requested_clock_out_at) {
-      const grossMinutes = Math.floor(
-        (request.requested_clock_out_at.getTime() - request.requested_clock_in_at.getTime()) /
-          60_000,
-      );
-      if (grossMinutes > OVERTIME_THRESHOLD_MINUTES) {
-        await insertOvertimeRequest(trx, {
-          timeEntryId: request.time_entry_id,
-          userId: request.user_id,
-          overtimeMinutes: grossMinutes - OVERTIME_THRESHOLD_MINUTES,
-        });
+      const breaks: Array<{ break_start_at: Date; break_end_at: Date }> = [];
+      if (r.requested_breaks_json) {
+        const raw = JSON.parse(r.requested_breaks_json) as BreakRequest[];
+        for (const b of raw) {
+          breaks.push({
+            break_start_at: parseTimeOnDate(r.requested_clock_in_at, b.start),
+            break_end_at: parseTimeOnDate(r.requested_clock_in_at, b.end),
+          });
+        }
       }
-    }
+
+      const oldState = JSON.stringify({
+        clockIn: entry.clock_in_at.toISOString(),
+        clockOut: entry.clock_out_at?.toISOString() ?? null,
+      });
+      const newState = JSON.stringify({
+        clockIn: r.requested_clock_in_at.toISOString(),
+        clockOut: r.requested_clock_out_at?.toISOString() ?? null,
+      });
+
+      await db.transaction().execute(async (trx) => {
+        await repo.approveCorrection(trx, {
+          correctionRequestId: r.id,
+          timeEntryId: r.time_entry_id,
+          targetUserId: r.user_id,
+          actorId: params.reviewerId,
+          newClockIn: r.requested_clock_in_at,
+          newClockOut: r.requested_clock_out_at ?? null,
+          breaks,
+          oldState,
+          newState,
+          reviewerNote: params.note,
+        });
+
+        if (r.requested_clock_out_at) {
+          const grossMinutes = Math.floor(
+            (r.requested_clock_out_at.getTime() - r.requested_clock_in_at.getTime()) / 60_000,
+          );
+          if (grossMinutes > OVERTIME_THRESHOLD_MINUTES) {
+            await insertOvertimeRequest(trx, {
+              timeEntryId: r.time_entry_id,
+              userId: r.user_id,
+              overtimeMinutes: grossMinutes - OVERTIME_THRESHOLD_MINUTES,
+            });
+          }
+        }
+      });
+    },
   });
 }

@@ -34,6 +34,7 @@ export async function reviewRetroactiveRequest(params: {
   return retroactive.reviewRetroactiveRequest(
     params.reviewerId,
     params.requestId,
+    params.reviewerRole,
     params.action,
     params.note,
   );
