@@ -4,6 +4,7 @@ import { UserRole, CreateUserSchema, UpdateUserSchema, ResetPasswordSchema, Chan
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRoles } from '../middleware/requireRoles.js';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendCreated, sendEmpty } from '../lib/response.js';
 import * as service from './users.service.js';
 
 export const usersRouter = Router();
@@ -19,7 +20,7 @@ usersRouter.patch(
         throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
       }
       await service.changeOwnPassword(req.user!.id, parsed.data);
-      res.status(200).json({ success: true, data: null });
+      sendEmpty(res);
     } catch (err) {
       next(err);
     }
@@ -31,7 +32,7 @@ usersRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await service.getOwnProfile(req.user!.id);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -44,7 +45,7 @@ usersRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await service.listUsers(req.user!);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -61,7 +62,7 @@ usersRouter.post(
         throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
       }
       const result = await service.createUser(parsed.data);
-      res.status(201).json({ success: true, data: result });
+      sendCreated(res, result);
     } catch (err) {
       next(err);
     }
@@ -81,7 +82,7 @@ usersRouter.patch(
         throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
       }
       const result = await service.updateUser(id, parsed.data);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }
@@ -101,7 +102,7 @@ usersRouter.patch(
         throw new AppError('Validation error.', 400, ErrorCode.VALIDATION_ERROR);
       }
       await service.resetUserPassword(id, parsed.data);
-      res.status(200).json({ success: true, data: null });
+      sendEmpty(res);
     } catch (err) {
       next(err);
     }
@@ -117,7 +118,7 @@ usersRouter.patch(
       if (isNaN(id)) throw new AppError('Invalid user ID.', 400, ErrorCode.VALIDATION_ERROR);
 
       const result = await service.deactivateUser(req.user!.id, id);
-      res.status(200).json({ success: true, data: result });
+      sendOk(res, result);
     } catch (err) {
       next(err);
     }

@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
+import { sendOk, sendCreated } from '../lib/response.js';
 import * as service from './timeclock.service.js';
 
 export async function handleGetStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await service.getStatus(req.user!.id);
-    res.status(200).json({ success: true, data: result });
+    sendOk(res, result);
   } catch (err) {
     next(err);
   }
@@ -13,7 +14,7 @@ export async function handleGetStatus(req: Request, res: Response, next: NextFun
 export async function handleClockIn(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await service.clockIn(req.user!.id);
-    res.status(201).json({ success: true, data: result });
+    sendCreated(res, result);
   } catch (err) {
     next(err);
   }
@@ -22,7 +23,7 @@ export async function handleClockIn(req: Request, res: Response, next: NextFunct
 export async function handleClockOut(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await service.clockOut(req.user!.id);
-    res.status(200).json({ success: true, data: result });
+    sendOk(res, result);
   } catch (err) {
     next(err);
   }
@@ -31,7 +32,7 @@ export async function handleClockOut(req: Request, res: Response, next: NextFunc
 export async function handleBreakStart(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await service.startBreak(req.user!.id);
-    res.status(201).json({ success: true, data: result });
+    sendCreated(res, result);
   } catch (err) {
     next(err);
   }
@@ -40,7 +41,7 @@ export async function handleBreakStart(req: Request, res: Response, next: NextFu
 export async function handleBreakEnd(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await service.endBreak(req.user!.id);
-    res.status(200).json({ success: true, data: result });
+    sendOk(res, result);
   } catch (err) {
     next(err);
   }

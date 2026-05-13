@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { ErrorCode } from '@app/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendCreated, sendEmpty } from '../lib/response.js';
 import * as service from './retroactive-requests.service.js';
 
 export const retroactiveRequestsRouter = Router();
@@ -25,7 +26,7 @@ retroactiveRequestsRouter.post(
         employeeNote,
         requesterRole: req.user!.role,
       });
-      res.status(201).json({ success: true, data: result });
+      sendCreated(res, result);
     } catch (err) {
       next(err);
     }
@@ -37,7 +38,7 @@ retroactiveRequestsRouter.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const results = await service.getMyRetroactiveRequests(req.user!.id);
-      res.status(200).json({ success: true, data: results });
+      sendOk(res, results);
     } catch (err) {
       next(err);
     }
@@ -51,7 +52,7 @@ retroactiveRequestsRouter.delete(
       const id = parseInt(String(req.params.id ?? ''), 10);
       if (isNaN(id)) throw new AppError('Invalid request ID.', 400, ErrorCode.VALIDATION_ERROR);
       await service.deleteRetroactiveRequest(req.user!.id, id);
-      res.status(200).json({ success: true, data: null });
+      sendEmpty(res);
     } catch (err) {
       next(err);
     }

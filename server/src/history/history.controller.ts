@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { ErrorCode } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendEmpty } from '../lib/response.js';
 import * as service from './history.service.js';
 
 const HistoryQuerySchema = z.object({
@@ -29,7 +30,7 @@ export async function handleGetHistory(req: Request, res: Response, next: NextFu
       to: parsed.data.to,
     });
 
-    res.status(200).json({ success: true, data: entries });
+    sendOk(res, entries);
   } catch (err) {
     next(err);
   }
@@ -53,7 +54,7 @@ export async function handleUpdateNote(req: Request, res: Response, next: NextFu
       note: parsed.data.note,
     });
 
-    res.status(200).json({ success: true, data: null });
+    sendEmpty(res);
   } catch (err) {
     next(err);
   }

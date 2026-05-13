@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ErrorCode, LoginSchema } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendEmpty } from '../lib/response.js';
 import * as authService from './auth.service.js';
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -23,10 +24,7 @@ export async function handleLogin(req: Request, res: Response, next: NextFunctio
       maxAge: REFRESH_COOKIE_TTL_MS,
     });
 
-    res.status(200).json({
-      success: true,
-      data: { accessToken: result.accessToken, user: result.user },
-    });
+    sendOk(res, { accessToken: result.accessToken, user: result.user });
   } catch (err) {
     next(err);
   }
@@ -40,7 +38,7 @@ export async function handleRefresh(req: Request, res: Response, next: NextFunct
     }
 
     const result = await authService.refreshAccessToken(rawToken);
-    res.status(200).json({ success: true, data: { accessToken: result.accessToken } });
+    sendOk(res, { accessToken: result.accessToken });
   } catch (err) {
     next(err);
   }
@@ -50,7 +48,7 @@ export async function handleLogout(req: Request, res: Response, next: NextFuncti
   try {
     await authService.logout(req.user!.id);
     res.clearCookie(REFRESH_COOKIE, { path: '/api/auth/refresh' });
-    res.status(200).json({ success: true, data: null });
+    sendEmpty(res);
   } catch (err) {
     next(err);
   }

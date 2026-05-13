@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { ErrorCode } from '@app/shared';
 import { AppError } from '../lib/errors.js';
+import { sendOk, sendEmpty } from '../lib/response.js';
 import * as service from './manager.service.js';
 
 const ReviewSchema = z.object({
@@ -16,7 +17,7 @@ export async function handleGetOvertimeQueue(
 ): Promise<void> {
   try {
     const data = await service.getPendingOvertimeRequests(req.user!.id, req.user!.role);
-    res.status(200).json({ success: true, data });
+    sendOk(res, data);
   } catch (err) {
     next(err);
   }
@@ -46,7 +47,7 @@ export async function handleReviewOvertime(
       note: parsed.data.note ?? null,
     });
 
-    res.status(200).json({ success: true, data: null });
+    sendEmpty(res);
   } catch (err) {
     next(err);
   }
@@ -64,7 +65,7 @@ export async function handleGetCorrectionQueue(
 ): Promise<void> {
   try {
     const data = await service.getCorrectionRequests(req.user!.id, req.user!.role);
-    res.status(200).json({ success: true, data });
+    sendOk(res, data);
   } catch (err) {
     next(err);
   }
@@ -94,7 +95,7 @@ export async function handleReviewCorrectionRequest(
       note: parsed.data.note ?? null,
     });
 
-    res.status(200).json({ success: true, data: null });
+    sendEmpty(res);
   } catch (err) {
     next(err);
   }
@@ -107,7 +108,7 @@ export async function handleGetRetroactiveQueue(
 ): Promise<void> {
   try {
     const data = await service.getRetroactiveRequests(req.user!.id, req.user!.role);
-    res.status(200).json({ success: true, data });
+    sendOk(res, data);
   } catch (err) {
     next(err);
   }
@@ -134,7 +135,7 @@ export async function handleReviewRetroactiveRequest(
       action: parsed.data.action,
       note: parsed.data.note ?? null,
     });
-    res.status(200).json({ success: true, data: result });
+    sendOk(res, result);
   } catch (err) {
     next(err);
   }
@@ -157,7 +158,7 @@ export async function handleReviewFlaggedSession(
       throw new AppError('breakEndTime is required.', 400, ErrorCode.VALIDATION_ERROR);
     }
     await service.reviewFlaggedSession(req.user!.id, req.user!.role, timeEntryId, breakEndTime);
-    res.status(200).json({ success: true, data: null });
+    sendEmpty(res);
   } catch (err) {
     next(err);
   }
@@ -174,7 +175,7 @@ export async function handleGetFlaggedSessions(
       throw new AppError('Invalid query parameters.', 400, ErrorCode.VALIDATION_ERROR);
     }
     const data = await service.getFlaggedSessions(req.user!.id, req.user!.role, parsed.data.employeeId);
-    res.status(200).json({ success: true, data });
+    sendOk(res, data);
   } catch (err) {
     next(err);
   }
