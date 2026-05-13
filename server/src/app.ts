@@ -22,6 +22,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(pinoHttp({ logger }));
 
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
 app.use('/api/auth', authRouter);
 app.use('/api/timeclock', timeclockRouter);
 app.use('/api/history', historyRouter);
