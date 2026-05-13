@@ -3,7 +3,7 @@ import { ErrorCode } from '@app/shared';
 import type { BreakRequest } from '@app/shared';
 import { AppError } from '../lib/errors.js';
 import { db } from '../db/connection.js';
-import { isCurrentMonth } from '../utils/periodLock.js';
+import { isCurrentMonthDate } from '../utils/periodLock.js';
 import * as repo from './retroactive-requests.repository.js';
 
 const TZ = 'Asia/Jerusalem';
@@ -82,7 +82,7 @@ export async function submitRetroactiveRequest(
     throw new AppError('An explanation is required', 400, ErrorCode.VALIDATION_ERROR);
   }
   const isManager = params.requesterRole === 'MANAGER' || params.requesterRole === 'ADMIN';
-  if (!isManager && !isCurrentMonth(params.date)) {
+  if (!isManager && !isCurrentMonthDate(params.date)) {
     throw new AppError(
       'You can only submit retroactive entries for the current month.',
       403,

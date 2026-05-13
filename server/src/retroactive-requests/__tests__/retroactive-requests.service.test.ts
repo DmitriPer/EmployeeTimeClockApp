@@ -18,6 +18,7 @@ vi.mock('../retroactive-requests.repository.js', () => ({
 
 vi.mock('../../utils/periodLock.js', () => ({
   isCurrentMonth: vi.fn(),
+  isCurrentMonthDate: vi.fn(),
 }));
 
 const mockDbExecuteTakeFirst = vi.hoisted(() => vi.fn());
@@ -74,7 +75,7 @@ const approvedRow = { ...pendingRow, status: 'APPROVED' as const };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(periodLock.isCurrentMonth).mockReturnValue(true);
+  vi.mocked(periodLock.isCurrentMonthDate).mockReturnValue(true);
   mockDbExecuteTakeFirst.mockResolvedValue(undefined);
 });
 
@@ -93,7 +94,7 @@ describe('submitRetroactiveRequest', () => {
   });
 
   it('throws PERIOD_LOCKED when date is outside current month', async () => {
-    vi.mocked(periodLock.isCurrentMonth).mockReturnValue(false);
+    vi.mocked(periodLock.isCurrentMonthDate).mockReturnValue(false);
 
     await expect(submitRetroactiveRequest(10, validParams)).rejects.toMatchObject({
       code: ErrorCode.PERIOD_LOCKED,
