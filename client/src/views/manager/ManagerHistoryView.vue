@@ -73,8 +73,8 @@ async function handleExport(format: ExportFormat): Promise<void> {
     <h1 class="text-base font-semibold text-gray-800">Employee History</h1>
 
     <!-- Filters -->
-    <div class="flex flex-wrap items-center gap-3">
-      <label class="flex items-center gap-2 text-sm text-gray-600">
+    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+      <label class="flex flex-col gap-1 text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-2">
         Employee
         <select v-model="selectedUserId" @change="onUserChange" class="rounded border border-gray-300 px-2 py-1 text-sm">
           <option v-for="u in users" :key="u.id" :value="u.id">
@@ -82,25 +82,22 @@ async function handleExport(format: ExportFormat): Promise<void> {
           </option>
         </select>
       </label>
-      <label class="flex items-center gap-2 text-sm text-gray-600">
+      <label class="flex flex-col gap-1 text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-2">
         From
         <input v-model="from" type="date" class="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
-      <label class="flex items-center gap-2 text-sm text-gray-600">
+      <label class="flex flex-col gap-1 text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-2">
         To
         <input v-model="to" type="date" class="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
       <BaseButton @click="loadHistory">Load</BaseButton>
-      <div class="ml-auto flex gap-2">
-        <button
+      <div class="sm:ml-auto flex flex-wrap gap-2">
+        <BaseButton
           v-for="fmt in (['csv', 'xls', 'pdf'] as ExportFormat[])"
           :key="fmt"
-          :disabled="exporting"
+          variant="secondary" size="sm" :disabled="exporting" class="uppercase"
           @click="handleExport(fmt)"
-          class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 uppercase"
-        >
-          {{ fmt }}
-        </button>
+        >{{ fmt }}</BaseButton>
       </div>
     </div>
 

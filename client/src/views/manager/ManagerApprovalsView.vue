@@ -131,7 +131,8 @@ async function submitFix(): Promise<void> {
   <div class="space-y-4">
     <h1 class="text-base font-semibold text-gray-800">Approvals</h1>
 
-    <div class="flex gap-1 border-b border-gray-200">
+    <div class="overflow-x-auto">
+    <div class="flex gap-1 border-b border-gray-200 min-w-max">
       <button
         v-for="tab in (['edits', 'missed', 'overtime', 'flagged'] as Tab[])" :key="tab"
         @click="switchTab(tab)"
@@ -146,6 +147,7 @@ async function submitFix(): Promise<void> {
           {{ tab === 'edits' ? corrections.length : tab === 'missed' ? retroactives.length : tab === 'overtime' ? overtimeRequests.length : pendingFlagged }}
         </span>
       </button>
+    </div>
     </div>
 
     <AsyncSection :loading="loading" :error="error">
@@ -163,7 +165,7 @@ async function submitFix(): Promise<void> {
             @approve="(note) => submitCorrectionReview(req, 'APPROVED', note)"
             @reject="(note) => submitCorrectionReview(req, 'REJECTED', note)"
           >
-            <div class="grid grid-cols-2 gap-4 rounded bg-gray-50 p-3 text-xs text-gray-600">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded bg-gray-50 p-3 text-xs text-gray-600">
               <div>
                 <p class="mb-1 font-medium text-gray-500">Current</p>
                 <p>{{ formatTime(req.currentClockInAt) }} — {{ req.currentClockOutAt ? formatTime(req.currentClockOutAt) : 'open' }}</p>
@@ -227,7 +229,36 @@ async function submitFix(): Promise<void> {
       <!-- Flagged Sessions -->
       <template v-else-if="activeTab === 'flagged'">
         <div v-if="sessions.length === 0" class="text-sm text-gray-400">No flagged sessions.</div>
-        <div v-else class="overflow-x-auto rounded border border-gray-200">
+        <!-- Cards (< lg) -->
+        <div class="lg:hidden space-y-2">
+          <article
+            v-for="s in sessions"
+            :key="s.timeEntryId"
+            class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+          >
+            <header class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-medium text-gray-900">{{ s.employeeName }}</p>
+                <p class="text-xs text-gray-500">{{ s.employeeId }} · {{ formatDate(s.clockInAt) }}</p>
+              </div>
+              <StatusBadge variant="custom" tone="amber" label="Break auto-closed" />
+            </header>
+            <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <dt class="text-gray-500">In</dt>
+              <dd class="text-right text-gray-800">{{ formatTime(s.clockInAt) }}</dd>
+              <dt class="text-gray-500">Out</dt>
+              <dd class="text-right text-gray-800">{{ s.clockOutAt ? formatTime(s.clockOutAt) : '—' }}</dd>
+              <dt class="text-gray-500">Corrections</dt>
+              <dd class="text-right text-gray-800">{{ s.correctionCount > 0 ? s.correctionCount : '—' }}</dd>
+            </dl>
+            <div class="mt-3 flex justify-end">
+              <StatusBadge v-if="s.reviewedAt" variant="break-fixed" :label="`Reviewed by ${s.reviewedByName}`" />
+              <BaseButton v-else size="sm" @click="openFixModal(s)">Fix</BaseButton>
+            </div>
+          </article>
+        </div>
+        <!-- Desktop table (≥ lg) -->
+        <div class="hidden lg:block overflow-x-auto rounded border border-gray-200">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
               <tr>
@@ -265,7 +296,7 @@ async function submitFix(): Promise<void> {
 
   <!-- Fix Break End Modal -->
   <BaseModal v-model:open="fixingOpen" title="Fix Break End Time" :subtitle="modalSubtitle" @close="closeFixModal">
-    <div v-if="fixingSession" class="grid grid-cols-2 gap-3">
+    <div v-if="fixingSession" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <label class="flex flex-col gap-1 text-xs text-gray-500">
         Clock In
         <input :value="formatTime(fixingSession.clockInAt)" type="text" disabled

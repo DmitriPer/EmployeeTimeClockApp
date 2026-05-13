@@ -65,6 +65,7 @@ onBeforeUnmount(() => {
           :class="sizeClass"
           @click.stop
         >
+          <div class="mx-auto -mt-2 mb-1 h-1 w-10 rounded-full bg-gray-300 sm:hidden" aria-hidden="true" />
           <header class="border-b border-gray-200 px-4 py-3 sm:px-5 flex items-start justify-between">
             <div>
               <h2 class="text-sm font-semibold text-gray-900">{{ title }}</h2>
